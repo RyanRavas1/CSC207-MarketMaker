@@ -1,4 +1,0 @@
-package com.marketmaker.entities;
-
-public class MainTest {
-}
