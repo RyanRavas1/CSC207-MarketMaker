@@ -14,9 +14,7 @@ import com.marketmaker.data_access.exceptions.FinnhubApiRateLimitException;
 
 /**
  * Handles all raw HTTP communication with the Finnhub API.
- * This class knows nothing about Order, Position, Trade, etc. — it only
- * knows how to send requests and hand back raw JSON strings. Translating
- * that JSON into domain objects is the job of a separate mapper class.
+ * Only returns string of the JSON response.
  */
 public class FinnhubApiClient {
 
@@ -32,7 +30,7 @@ public class FinnhubApiClient {
                 .build();
     }
 
-    // Constructor for tests — lets you inject a mock/fake HttpClient
+    // Constructor for tests, can inject a mock/fake HttpClient
     public FinnhubApiClient(String apiKey, HttpClient httpClient) {
         this.apiKey = apiKey;
         this.httpClient = httpClient;
