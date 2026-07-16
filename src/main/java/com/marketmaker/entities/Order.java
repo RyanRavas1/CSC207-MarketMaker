@@ -53,6 +53,5 @@ public class Order {
     public Status getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getFilledAt() { return filledAt; }
-
     public Double getFillPrice() { return fillPrice; }
 }

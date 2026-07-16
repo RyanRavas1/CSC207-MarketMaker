@@ -5,69 +5,58 @@ import java.util.List;
 
 public class Account {
 
-    private String UserName;
-    private double UserBalance;
-    private List<Position> Holdings;
-    private List<Order> PlacedOrder;
-    private List<Trade> TradeLog;
+    private String userName;
+    private double userBalance;
+    private List<Position> holdings;
+    private List<Order> placedOrders;
+    private List<Trade> tradeLog;
 
-    public Account (String UserName, double UserBalance){
-        this.UserName = UserName;
-        this.UserBalance = UserBalance;
-        this.Holdings = new ArrayList<>();
-        this.PlacedOrder = new ArrayList<>();
-        this.TradeLog = new ArrayList<>();
-    }
-
-    public double edit_balance (double change){
-        this.UserBalance += change;
-        return this.UserBalance
+    public Account(String userName, double userBalance) {
+        this.userName = userName;
+        this.userBalance = userBalance;
+        this.holdings = new ArrayList<>();
+        this.placedOrders = new ArrayList<>();
+        this.tradeLog = new ArrayList<>();
     }
 
-    public String change_username (String NewUsername){
-        this.UserName = NewUsername;
-        return this.UserName
+    public double editBalance(double change) {
+        this.userBalance += change;
+        return this.userBalance;
     }
 
-    //add new position to Holdings
-    public void addPosition(Position NewPosition){
-        this.Holdings.add(NewPosition);
+    public String changeUsername(String newUsername) {
+        this.userName = newUsername;
+        return this.userName;
     }
 
-    //add Trade tI TradeLog
-    public void addTrade(Trade NewTrade){
-        this.TradeLog.add(NewTrade);
+    // add new position to holdings
+    public void addPosition(Position newPosition) {
+        this.holdings.add(newPosition);
     }
 
-    //add Order to PlacedOrder
-    public void addOrder(Order NewOrder){
-        this.PlacedOrder.add(NewOrder);
+    // add trade to tradeLog
+    public void addTrade(Trade newTrade) {
+        this.tradeLog.add(newTrade);
     }
 
-    //remove Order to PlacedOrder
-    public void removeOrder(Order TargetOrder){
-        this.PlacedOrder.remove(TargetOrder);
+    // add order to placedOrders
+    public void addOrder(Order newOrder) {
+        this.placedOrders.add(newOrder);
     }
 
-    //remove position to Holdings
-    public void removePosition(Position TargetPosition){
-        this.Holdings.remove(TargetPosition);
+    // remove order from placedOrders
+    public void removeOrder(Order targetOrder) {
+        this.placedOrders.remove(targetOrder);
     }
 
-    public String getUserName(){
-        return this.UserName;
-    }
-    public double getUserBalance(){
-        return this.UserBalance;
-    }
-    public List<Position> getHoldings(){
-        return this.Holdings;
-    }
-    public List<Order> getPlacedOrder(){
-        return this.PlacedOrder;
-    }
-    public List<Trade> getTradeLog(){
-        return this.TradeLog;
+    // remove position from holdings
+    public void removePosition(Position targetPosition) {
+        this.holdings.remove(targetPosition);
     }
 
+    public String getUserName() { return this.userName; }
+    public double getUserBalance() { return this.userBalance; }
+    public List<Position> getHoldings() { return this.holdings; }
+    public List<Order> getPlacedOrders() { return this.placedOrders; }
+    public List<Trade> getTradeLog() { return this.tradeLog; }
 }
