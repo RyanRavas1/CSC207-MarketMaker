@@ -10,6 +10,7 @@ public class Account {
     private List<Position> holdings;
     private List<Order> placedOrders;
     private List<Trade> tradeLog;
+    private Watchlist watchlist;
 
     public Account(String userName, double userBalance) {
         this.userName = userName;
@@ -17,6 +18,7 @@ public class Account {
         this.holdings = new ArrayList<>();
         this.placedOrders = new ArrayList<>();
         this.tradeLog = new ArrayList<>();
+        this.watchlist = new Watchlist();
     }
 
     public double editBalance(double change) {
@@ -59,4 +61,5 @@ public class Account {
     public List<Position> getHoldings() { return this.holdings; }
     public List<Order> getPlacedOrders() { return this.placedOrders; }
     public List<Trade> getTradeLog() { return this.tradeLog; }
+    public Watchlist getWatchlist() { return this.watchlist; }
 }
