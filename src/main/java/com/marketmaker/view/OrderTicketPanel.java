@@ -16,14 +16,21 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 
+import com.marketmaker.interface_adapter.ViewModel;
+import com.marketmaker.use_case.view_portfolio_summary.ViewPortfolioSummaryResponseModel;
+
 public class OrderTicketPanel extends TitledPanel {
 
-    public OrderTicketPanel() {
+    private final JLabel buyingPower = new JLabel(Format.ABSENT);
+
+    public OrderTicketPanel(ViewModel<ViewPortfolioSummaryResponseModel> summary) {
         super("Order Ticket");
         setPreferredSize(new Dimension(358, 450));
 
         getContent().add(buildForm(), BorderLayout.NORTH);
         getContent().add(buildSubmitGroup(), BorderLayout.SOUTH);
+
+        summary.onState(response -> buyingPower.setText("$" + Format.money(response.getBuyingPower())));
     }
 
     private JComponent buildForm() {
@@ -61,7 +68,9 @@ public class OrderTicketPanel extends TitledPanel {
 
         bottom.add(divider());
         bottom.add(summaryRow("Estimated cost", "$2,285.00", UiTheme.BASE_BOLD));
-        bottom.add(summaryRow("Buying power", PlaceholderData.BUYING_POWER, UiTheme.BASE));
+        buyingPower.setFont(UiTheme.BASE);
+        buyingPower.setForeground(UiTheme.TEXT);
+        bottom.add(summaryRow("Buying power", buyingPower));
 
         JLabel hint = new JLabel("Sufficient buying power");
         hint.setFont(UiTheme.BASE);
@@ -137,6 +146,13 @@ public class OrderTicketPanel extends TitledPanel {
     }
 
     private JComponent summaryRow(String caption, String value, Font valueFont) {
+        JLabel right = new JLabel(value);
+        right.setFont(valueFont);
+        right.setForeground(UiTheme.TEXT);
+        return summaryRow(caption, right);
+    }
+
+    private JComponent summaryRow(String caption, JLabel right) {
         JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(false);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -145,10 +161,6 @@ public class OrderTicketPanel extends TitledPanel {
         JLabel left = new JLabel(caption);
         left.setFont(UiTheme.BASE);
         left.setForeground(UiTheme.TEXT);
-
-        JLabel right = new JLabel(value);
-        right.setFont(valueFont);
-        right.setForeground(UiTheme.TEXT);
 
         row.add(left, BorderLayout.WEST);
         row.add(right, BorderLayout.EAST);

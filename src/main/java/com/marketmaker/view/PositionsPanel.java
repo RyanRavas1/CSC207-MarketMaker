@@ -2,39 +2,30 @@ package com.marketmaker.view;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.GridLayout;
+import java.util.List;
 
-import javax.swing.BorderFactory;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
+import com.marketmaker.interface_adapter.ViewModel;
+import com.marketmaker.use_case.view_positions.PositionView;
+import com.marketmaker.use_case.view_positions.ViewPositionsResponseModel;
 
+/** Current holdings, priced at the latest quote. */
 public class PositionsPanel extends TitledPanel {
 
-    public PositionsPanel() {
+    private static final List<Column<PositionView>> COLUMNS = List.of(
+            Column.of("Sym", String.class, PositionView::getTicker),
+            new Column<>("Qty", Integer.class, PositionView::getShares, CellStyle.NUMBER),
+            new Column<>("Avg", Double.class, PositionView::getAverageCost, CellStyle.NUMBER),
+            new Column<>("Last", Double.class, PositionView::getCurrentPrice, CellStyle.NUMBER),
+            new Column<>("Unrl P/L", Double.class, PositionView::getUnrealizedPnL, CellStyle.SIGNED));
+
+    private final ListTableModel<PositionView> model = new ListTableModel<>(COLUMNS);
+
+    public PositionsPanel(ViewModel<ViewPositionsResponseModel> viewModel) {
         super("Positions");
         setPreferredSize(new Dimension(358, 138));
 
-        int[] align = {SwingConstants.LEFT, SwingConstants.RIGHT, SwingConstants.RIGHT,
-                SwingConstants.RIGHT, SwingConstants.RIGHT, SwingConstants.RIGHT};
+        getContent().add(Tables.scroll(Tables.create(model)), BorderLayout.CENTER);
 
-        JPanel grid = new JPanel(new GridLayout(0, 6, 8, 2));
-        grid.setOpaque(false);
-        for (int i = 0; i < PlaceholderData.POSITIONS_COLUMNS.length; i++) {
-            grid.add(ViewComponents.header(PlaceholderData.POSITIONS_COLUMNS[i], align[i]));
-        }
-        for (String[] r : PlaceholderData.POSITIONS) {
-            grid.add(ViewComponents.cell(r[0], SwingConstants.LEFT));
-            grid.add(ViewComponents.cell(r[1], SwingConstants.RIGHT));
-            grid.add(ViewComponents.cell(r[2], SwingConstants.RIGHT));
-            grid.add(ViewComponents.cell(r[3], SwingConstants.RIGHT));
-            grid.add(ViewComponents.cell(r[4], SwingConstants.RIGHT));
-            grid.add(ViewComponents.signedCell(r[5], SwingConstants.RIGHT));
-        }
-
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(UiTheme.PANEL_BG);
-        wrapper.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER_LIGHT));
-        wrapper.add(grid, BorderLayout.NORTH);
-        getContent().add(wrapper, BorderLayout.CENTER);
+        viewModel.onState(response -> model.setRows(response.getPositions()));
     }
 }

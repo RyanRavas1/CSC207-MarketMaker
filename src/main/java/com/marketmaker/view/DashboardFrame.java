@@ -3,6 +3,7 @@ package com.marketmaker.view;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
@@ -11,12 +12,40 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-// The main window: watchlist on the left, chart in the middle, order ticket and
-// positions on the right, order history along the bottom.
+import com.marketmaker.entities.Quote;
+import com.marketmaker.interface_adapter.ViewModel;
+import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
+import com.marketmaker.use_case.view_order_history.ViewOrderHistoryResponseModel;
+import com.marketmaker.use_case.view_portfolio_summary.ViewPortfolioSummaryResponseModel;
+import com.marketmaker.use_case.view_positions.ViewPositionsResponseModel;
+
+/**
+ * The main window: watchlist on the left, chart in the middle, order ticket and
+ * positions on the right, order history along the bottom.
+ *
+ * <p>Every panel is driven by a view model rather than reading data itself, so the
+ * frame only owns layout. Presenters publish into those view models.
+ */
 public class DashboardFrame extends JFrame {
 
-    public DashboardFrame() {
+    private final ViewModel<ViewPortfolioSummaryResponseModel> summary;
+    private final ViewModel<ViewPositionsResponseModel> positions;
+    private final ViewModel<ViewOrderHistoryResponseModel> orderHistory;
+    private final ViewModel<ViewCandlestickChartResponseModel> chart;
+    private final ViewModel<List<Quote>> watchlist;
+
+    public DashboardFrame(ViewModel<ViewPortfolioSummaryResponseModel> summary,
+                          ViewModel<ViewPositionsResponseModel> positions,
+                          ViewModel<ViewOrderHistoryResponseModel> orderHistory,
+                          ViewModel<ViewCandlestickChartResponseModel> chart,
+                          ViewModel<List<Quote>> watchlist) {
         super("MarketMaker — Paper Trading Simulator");
+        this.summary = summary;
+        this.positions = positions;
+        this.orderHistory = orderHistory;
+        this.chart = chart;
+        this.watchlist = watchlist;
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1440, 940);
         setMinimumSize(new Dimension(1100, 700));
@@ -33,7 +62,7 @@ public class DashboardFrame extends JFrame {
         JPanel north = new JPanel(new BorderLayout());
         north.setOpaque(false);
         north.add(buildToolBar(), BorderLayout.NORTH);
-        north.add(new AccountSummaryBar(), BorderLayout.SOUTH);
+        north.add(new AccountSummaryBar(summary), BorderLayout.SOUTH);
         return north;
     }
 
@@ -73,10 +102,10 @@ public class DashboardFrame extends JFrame {
         body.setBackground(UiTheme.BAR_BG);
         body.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        body.add(new WatchlistPanel(), BorderLayout.WEST);
-        body.add(new ChartPanel(), BorderLayout.CENTER);
+        body.add(new WatchlistPanel(watchlist), BorderLayout.WEST);
+        body.add(new ChartPanel(chart), BorderLayout.CENTER);
         body.add(buildRightColumn(), BorderLayout.EAST);
-        body.add(new OrderHistoryPanel(), BorderLayout.SOUTH);
+        body.add(new OrderHistoryPanel(orderHistory), BorderLayout.SOUTH);
         return body;
     }
 
@@ -84,8 +113,8 @@ public class DashboardFrame extends JFrame {
         JPanel column = new JPanel(new BorderLayout(0, 8));
         column.setOpaque(false);
         column.setPreferredSize(new Dimension(358, 593));
-        column.add(new OrderTicketPanel(), BorderLayout.NORTH);
-        column.add(new PositionsPanel(), BorderLayout.CENTER);
+        column.add(new OrderTicketPanel(summary), BorderLayout.NORTH);
+        column.add(new PositionsPanel(positions), BorderLayout.CENTER);
         return column;
     }
 }

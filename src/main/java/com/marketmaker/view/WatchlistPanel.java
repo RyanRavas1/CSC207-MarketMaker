@@ -3,25 +3,49 @@ package com.marketmaker.view;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
+import java.time.Instant;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 
+import com.marketmaker.entities.Quote;
+import com.marketmaker.interface_adapter.ViewModel;
+
+/**
+ * The tickers being tracked, at their latest quoted price.
+ *
+ * <p>Bound to {@link Quote} because that is what {@code receive_live_quotes} delivers.
+ * A percent-change column is deliberately absent: no current response model carries a
+ * previous close, and the watchlist contract itself is still contested between PR #7
+ * and PR #9. Add the column once one of those lands and exposes it.
+ */
 public class WatchlistPanel extends TitledPanel {
 
-    public WatchlistPanel() {
+    private static final List<Column<Quote>> COLUMNS = List.of(
+            Column.of("Symbol", String.class, Quote::getTicker),
+            new Column<>("Last", Double.class, Quote::getPrice, CellStyle.NUMBER),
+            Column.of("Updated", Instant.class, Quote::getTimestamp));
+
+    private final ListTableModel<Quote> model = new ListTableModel<>(COLUMNS);
+    private final JLabel updated = new JLabel();
+
+    public WatchlistPanel(ViewModel<List<Quote>> viewModel) {
         super("Watchlist");
         setPreferredSize(new Dimension(300, 593));
 
         getContent().add(buildEntryRow(), BorderLayout.NORTH);
-        getContent().add(buildTable(), BorderLayout.CENTER);
+        getContent().add(Tables.scroll(Tables.create(model)), BorderLayout.CENTER);
         getContent().add(buildFooter(), BorderLayout.SOUTH);
+
+        viewModel.onState(quotes -> {
+            model.setRows(quotes);
+            updated.setText("Updated " + Format.time(Instant.now()));
+        });
     }
 
     private JPanel buildEntryRow() {
@@ -49,26 +73,6 @@ public class WatchlistPanel extends TitledPanel {
         return button;
     }
 
-    private JPanel buildTable() {
-        int[] align = {SwingConstants.LEFT, SwingConstants.RIGHT, SwingConstants.RIGHT};
-        JPanel grid = new JPanel(new GridLayout(0, 3, 8, 2));
-        grid.setOpaque(false);
-        for (int i = 0; i < PlaceholderData.WATCHLIST_COLUMNS.length; i++) {
-            grid.add(ViewComponents.header(PlaceholderData.WATCHLIST_COLUMNS[i], align[i]));
-        }
-        for (String[] r : PlaceholderData.WATCHLIST) {
-            grid.add(ViewComponents.cell(r[0], SwingConstants.LEFT));
-            grid.add(ViewComponents.cell(r[1], SwingConstants.RIGHT));
-            grid.add(ViewComponents.signedCell(r[2], SwingConstants.RIGHT));
-        }
-
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(UiTheme.PANEL_BG);
-        wrapper.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
-        wrapper.add(grid, BorderLayout.NORTH);
-        return wrapper;
-    }
-
     private JPanel buildFooter() {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setOpaque(false);
@@ -82,7 +86,6 @@ public class WatchlistPanel extends TitledPanel {
         live.setForeground(UiTheme.GREEN);
         left.add(live);
 
-        JLabel updated = new JLabel("Updated 14:32:07 ET");
         updated.setFont(UiTheme.BASE);
         updated.setForeground(UiTheme.TEXT_MUTED);
 

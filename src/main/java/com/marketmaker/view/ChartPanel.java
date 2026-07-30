@@ -3,7 +3,8 @@ package com.marketmaker.view;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.GridLayout;
+import java.time.Instant;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -11,11 +12,42 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
-// The real candlestick chart would need custom drawing, so for now we just show
-// the recent price bars in a small table.
+import com.marketmaker.entities.Candle;
+import com.marketmaker.interface_adapter.ViewModel;
+import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
+
+/**
+ * Price history for the selected ticker.
+ *
+ * <p>The bars are shown as a table rather than drawn candles; rendering the actual
+ * candlestick chart needs custom painting and is left for the charting task. The
+ * interval buttons are inert until a {@code ViewCandlestickChartInputBoundary}
+ * controller exists to re-run the use case at a new {@code Resolution}.
+ */
 public class ChartPanel extends TitledPanel {
 
-    public ChartPanel() {
+    private static final List<Column<Candle>> COLUMNS = List.of(
+            Column.of("Time", Instant.class, Candle::getTimestamp),
+            new Column<>("Open", Double.class, Candle::getOpen, CellStyle.NUMBER),
+            new Column<>("High", Double.class, Candle::getHigh, CellStyle.NUMBER),
+            new Column<>("Low", Double.class, Candle::getLow, CellStyle.NUMBER),
+            new Column<>("Close", Double.class, Candle::getClose, CellStyle.NUMBER));
+
+    private final ListTableModel<Candle> model = new ListTableModel<>(COLUMNS);
+
+    private final JLabel ticker = ViewComponents.label(Format.ABSENT, UiTheme.TICKER, UiTheme.TEXT,
+            SwingConstants.LEFT);
+    private final JLabel last = ViewComponents.label(Format.ABSENT, UiTheme.PRICE, UiTheme.TEXT,
+            SwingConstants.LEFT);
+    private final JLabel change = ViewComponents.label(Format.ABSENT, UiTheme.BASE_BOLD, UiTheme.TEXT_MUTED,
+            SwingConstants.LEFT);
+    private final JLabel open = statValue();
+    private final JLabel high = statValue();
+    private final JLabel low = statValue();
+    private final JLabel close = statValue();
+    private final JLabel volume = statValue();
+
+    public ChartPanel(ViewModel<ViewCandlestickChartResponseModel> viewModel) {
         super("Chart");
 
         JPanel header = new JPanel(new BorderLayout());
@@ -23,8 +55,39 @@ public class ChartPanel extends TitledPanel {
         header.add(buildQuoteRow(), BorderLayout.NORTH);
         header.add(buildOhlcRow(), BorderLayout.SOUTH);
 
+        JPanel area = new JPanel(new BorderLayout());
+        area.setOpaque(false);
+        area.setPreferredSize(new Dimension(730, 430));
+        area.add(Tables.scroll(Tables.create(model)), BorderLayout.CENTER);
+
         getContent().add(header, BorderLayout.NORTH);
-        getContent().add(buildChartArea(), BorderLayout.CENTER);
+        getContent().add(area, BorderLayout.CENTER);
+
+        viewModel.onState(this::show);
+    }
+
+    private void show(ViewCandlestickChartResponseModel response) {
+        model.setRows(response.getCandles());
+        ticker.setText(response.getTicker());
+
+        List<Candle> candles = response.getCandles();
+        if (candles == null || candles.isEmpty()) {
+            return;
+        }
+        Candle latest = candles.get(candles.size() - 1);
+        double first = candles.get(0).getOpen();
+        double delta = latest.getClose() - first;
+
+        last.setText(Format.money(latest.getClose()));
+        change.setText(Format.signedMoney(delta)
+                + " (" + Format.percent(first == 0 ? null : delta / first * 100) + ")");
+        change.setForeground(delta < 0 ? UiTheme.RED : UiTheme.GREEN);
+
+        open.setText(Format.money(latest.getOpen()));
+        high.setText(Format.money(latest.getHigh()));
+        low.setText(Format.money(latest.getLow()));
+        close.setText(Format.money(latest.getClose()));
+        volume.setText(Format.volume(latest.getVolume()));
     }
 
     private JComponent buildQuoteRow() {
@@ -34,10 +97,9 @@ public class ChartPanel extends TitledPanel {
 
         JPanel quote = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         quote.setOpaque(false);
-        quote.add(ViewComponents.label(PlaceholderData.SYMBOL, UiTheme.TICKER, UiTheme.TEXT, SwingConstants.LEFT));
-        quote.add(ViewComponents.label(PlaceholderData.COMPANY, UiTheme.BASE, UiTheme.TEXT_MUTED, SwingConstants.LEFT));
-        quote.add(ViewComponents.label(PlaceholderData.LAST, UiTheme.PRICE, UiTheme.TEXT, SwingConstants.LEFT));
-        quote.add(ViewComponents.signedCell(PlaceholderData.CHANGE, SwingConstants.LEFT));
+        quote.add(ticker);
+        quote.add(last);
+        quote.add(change);
 
         row.add(quote, BorderLayout.WEST);
         row.add(buildIntervalPicker(), BorderLayout.EAST);
@@ -58,54 +120,23 @@ public class ChartPanel extends TitledPanel {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         row.setOpaque(false);
         row.setBorder(BorderFactory.createEmptyBorder(0, 4, 8, 0));
-        addStat(row, "O", PlaceholderData.OPEN);
-        addStat(row, "H", PlaceholderData.HIGH);
-        addStat(row, "L", PlaceholderData.LOW);
-        addStat(row, "C", PlaceholderData.CLOSE);
-        addStat(row, "Vol", PlaceholderData.VOLUME);
+        addStat(row, "O", open);
+        addStat(row, "H", high);
+        addStat(row, "L", low);
+        addStat(row, "C", close);
+        addStat(row, "Vol", volume);
         return row;
     }
 
-    private void addStat(JPanel row, String name, String value) {
+    private void addStat(JPanel row, String name, JLabel amount) {
         JLabel key = ViewComponents.label(name, UiTheme.BASE, UiTheme.TEXT_LABEL, SwingConstants.LEFT);
         key.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 4));
-        JLabel amount = ViewComponents.label(value, UiTheme.BASE_BOLD, UiTheme.TEXT, SwingConstants.LEFT);
         amount.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 16));
         row.add(key);
         row.add(amount);
     }
 
-    private JComponent buildChartArea() {
-        JPanel area = new JPanel(new BorderLayout());
-        area.setBackground(UiTheme.PANEL_BG);
-        area.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER_LIGHT));
-        area.setPreferredSize(new Dimension(730, 430));
-
-        JLabel caption = ViewComponents.label("Recent bars", UiTheme.BASE_BOLD, UiTheme.TEXT, SwingConstants.LEFT);
-        caption.setBorder(BorderFactory.createEmptyBorder(8, 8, 6, 8));
-
-        int[] align = {SwingConstants.LEFT, SwingConstants.RIGHT, SwingConstants.RIGHT,
-                SwingConstants.RIGHT, SwingConstants.RIGHT};
-        JPanel grid = new JPanel(new GridLayout(0, 5, 8, 2));
-        grid.setOpaque(false);
-        grid.setBorder(BorderFactory.createEmptyBorder(0, 8, 8, 8));
-        for (int i = 0; i < PlaceholderData.RECENT_BARS_COLUMNS.length; i++) {
-            grid.add(ViewComponents.header(PlaceholderData.RECENT_BARS_COLUMNS[i], align[i]));
-        }
-        for (String[] b : PlaceholderData.RECENT_BARS) {
-            grid.add(ViewComponents.cell(b[0], SwingConstants.LEFT));
-            grid.add(ViewComponents.cell(b[1], SwingConstants.RIGHT));
-            grid.add(ViewComponents.cell(b[2], SwingConstants.RIGHT));
-            grid.add(ViewComponents.cell(b[3], SwingConstants.RIGHT));
-            grid.add(ViewComponents.cell(b[4], SwingConstants.RIGHT));
-        }
-
-        JPanel gridWrap = new JPanel(new BorderLayout());
-        gridWrap.setOpaque(false);
-        gridWrap.add(grid, BorderLayout.NORTH);
-
-        area.add(caption, BorderLayout.NORTH);
-        area.add(gridWrap, BorderLayout.CENTER);
-        return area;
+    private static JLabel statValue() {
+        return ViewComponents.label(Format.ABSENT, UiTheme.BASE_BOLD, UiTheme.TEXT, SwingConstants.LEFT);
     }
 }
