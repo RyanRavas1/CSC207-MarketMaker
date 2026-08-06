@@ -10,8 +10,6 @@ import com.marketmaker.entities.Position;
 
 /** Submits a limit or stop-loss order as pending. */
 public class PlaceLimitStopOrderInteractor implements PlaceLimitStopOrderInputBoundary {
-    private static final double STARTING_BALANCE = 100_000.0;
-
     private final AccountDAO accountDAO;
     private final PlaceLimitStopOrderOutputBoundary presenter;
 
@@ -37,7 +35,8 @@ public class PlaceLimitStopOrderInteractor implements PlaceLimitStopOrderInputBo
 
         Account account = accountDAO.get(request.getAccountId());
         if (account == null) {
-            account = new Account(request.getAccountId(), STARTING_BALANCE);
+            presenter.presentFailure("Account not found.");
+            return;
         }
 
         // Checked against the trigger price now and it will be checked again for real at fill time.

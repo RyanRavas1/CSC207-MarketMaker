@@ -10,16 +10,16 @@ import com.marketmaker.entities.Position;
 import com.marketmaker.entities.Quote;
 import com.marketmaker.entities.Trade;
 import com.marketmaker.price_feed.PriceFeed;
+import com.marketmaker.price_feed.PriceFeedException;
 
+/** Fills a market order immediately at the live quoted price. */
 public class PlaceOrderInteractor implements PlaceOrderInputBoundary {
-    private static final double STARTING_BALANCE = 100_000.0;
-
     private final AccountDAO accountDAO;
     private final PriceFeed priceFeed;
     private final PlaceOrderOutputBoundary presenter;
 
     public PlaceOrderInteractor(AccountDAO accountDAO, PriceFeed priceFeed,
-                                 PlaceOrderOutputBoundary presenter) {
+                                PlaceOrderOutputBoundary presenter) {
         this.accountDAO = accountDAO;
         this.priceFeed = priceFeed;
         this.presenter = presenter;
@@ -27,15 +27,30 @@ public class PlaceOrderInteractor implements PlaceOrderInputBoundary {
 
     @Override
     public void execute(PlaceOrderRequestModel request) {
+        // A negative quantity inverts every sign below: a BUY would credit cash and a
+        // SELL would hand out shares, so reject it before anything touches the balance.
+        if (request.getQuantity() <= 0) {
+            presenter.presentFailure("Quantity must be positive.");
+            return;
+        }
+
         Account account = accountDAO.get(request.getAccountId());
         if (account == null) {
-            account = new Account(request.getAccountId(), STARTING_BALANCE);
+            presenter.presentFailure("Account not found.");
+            return;
         }
 
         String ticker = request.getTicker();
         int quantity = request.getQuantity();
-        Quote quote = priceFeed.getQuote(ticker);
-        double price = quote.getPrice();
+        // Priced before anything is debited, so a feed outage leaves the account untouched.
+        double price;
+        try {
+            Quote quote = priceFeed.getQuote(ticker);
+            price = quote.getPrice();
+        } catch (PriceFeedException exception) {
+            presenter.presentFailure(exception.getMessage());
+            return;
+        }
         Position existing = findPosition(account, ticker);
 
         Double realizedPnL = null;
@@ -61,8 +76,8 @@ public class PlaceOrderInteractor implements PlaceOrderInputBoundary {
                 Order.Type.MARKET, quantity, null, Instant.now());
         order.fill(price, Instant.now());
         account.addOrder(order);
-        account.addTrade(new Trade(UUID.randomUUID().toString(), ticker, request.getSide(),
-                quantity, price, Instant.now(), realizedPnL));
+        account.addTrade(new Trade(UUID.randomUUID().toString(), order.getId(), ticker,
+                request.getSide(), quantity, price, Instant.now(), realizedPnL));
 
         accountDAO.save(account);
 
@@ -95,14 +110,7 @@ public class PlaceOrderInteractor implements PlaceOrderInputBoundary {
         return remaining == 0 ? null : new Position(existing.getTicker(), remaining, existing.getAveragePrice());
     }
 
-    // Position has no in-place mutators, so "updating" a holding means swapping it
-    // out for a freshly built one. Remove the old (if any), add the new (if any).
     private void replacePosition(Account account, Position existing, Position updated) {
-        if (existing != null) {
-            account.removePosition(existing);
-        }
-        if (updated != null) {
-            account.addPosition(updated);
-        }
+        account.replacePosition(existing, updated);
     }
 }

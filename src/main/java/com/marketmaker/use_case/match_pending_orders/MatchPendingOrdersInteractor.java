@@ -92,8 +92,8 @@ public class MatchPendingOrdersInteractor implements MatchPendingOrdersInputBoun
         }
 
         order.fill(price, Instant.now());
-        account.addTrade(new Trade(UUID.randomUUID().toString(), ticker, order.getSide(),
-                quantity, price, Instant.now(), realizedPnL));
+        account.addTrade(new Trade(UUID.randomUUID().toString(), order.getId(), ticker,
+                order.getSide(), quantity, price, Instant.now(), realizedPnL));
 
         Position resulting = findPosition(account, ticker);
         int newShareCount = resulting == null ? 0 : resulting.getShares();
@@ -125,11 +125,6 @@ public class MatchPendingOrdersInteractor implements MatchPendingOrdersInputBoun
     }
 
     private void replacePosition(Account account, Position existing, Position updated) {
-        if (existing != null) {
-            account.removePosition(existing);
-        }
-        if (updated != null) {
-            account.addPosition(updated);
-        }
+        account.replacePosition(existing, updated);
     }
 }

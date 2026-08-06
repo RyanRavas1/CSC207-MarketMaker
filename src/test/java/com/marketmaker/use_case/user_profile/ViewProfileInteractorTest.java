@@ -1,6 +1,7 @@
 package com.marketmaker.use_case.user_profile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 
@@ -12,6 +13,7 @@ import com.marketmaker.entities.Position;
 import com.marketmaker.entities.Quote;
 import com.marketmaker.price_feed.PriceFeed;
 
+/** The interactor's arithmetic: live valuation, unrealized P/L, and total equity. */
 class ViewProfileInteractorTest {
 
     @Test
@@ -25,16 +27,19 @@ class ViewProfileInteractorTest {
         PriceFeed feed = ticker -> new Quote(ticker, 150.0, Instant.now());
         ViewProfileResponseModel[] out = new ViewProfileResponseModel[1];
         ViewProfileOutputBoundary presenter = new ViewProfileOutputBoundary() {
-            public void presentProfile(ViewProfileResponseModel r) { out[0] = r; }
-            public void presentFailure(String e) { throw new AssertionError(e); }
+            @Override
+            public void presentProfile(ViewProfileResponseModel response) { out[0] = response; }
+
+            @Override
+            public void presentFailure(String errorMessage) { throw new AssertionError(errorMessage); }
         };
 
         new ViewProfileInteractor(dao, feed, presenter)
                 .execute(new ViewProfileRequestModel("ericsson"));
 
-        ViewProfileResponseModel.Holding h = out[0].getHoldings().get(0);
-        assertEquals(1_500.0, h.getMarketValue());
-        assertEquals(500.0, h.getUnrealizedPnL());
+        ViewProfileResponseModel.Holding holding = out[0].getHoldings().get(0);
+        assertEquals(1_500.0, holding.getMarketValue());
+        assertEquals(500.0, holding.getUnrealizedPnL());
         assertEquals(2_500.0, out[0].getTotalEquity()); // 1000 cash + 1500 holdings
     }
 
@@ -42,14 +47,17 @@ class ViewProfileInteractorTest {
     void missingAccountFails() {
         boolean[] failed = {false};
         ViewProfileOutputBoundary presenter = new ViewProfileOutputBoundary() {
-            public void presentProfile(ViewProfileResponseModel r) { }
-            public void presentFailure(String e) { failed[0] = true; }
+            @Override
+            public void presentProfile(ViewProfileResponseModel response) { }
+
+            @Override
+            public void presentFailure(String errorMessage) { failed[0] = true; }
         };
 
         new ViewProfileInteractor(new InMemoryAccountDAO(),
                 ticker -> new Quote(ticker, 1.0, Instant.now()), presenter)
                 .execute(new ViewProfileRequestModel("nobody"));
 
-        assertEquals(true, failed[0]);
+        assertTrue(failed[0]);
     }
 }
