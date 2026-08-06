@@ -125,11 +125,6 @@ public class MatchPendingOrdersInteractor implements MatchPendingOrdersInputBoun
     }
 
     private void replacePosition(Account account, Position existing, Position updated) {
-        if (existing != null) {
-            account.removePosition(existing);
-        }
-        if (updated != null) {
-            account.addPosition(updated);
-        }
+        account.replacePosition(existing, updated);
     }
 }
