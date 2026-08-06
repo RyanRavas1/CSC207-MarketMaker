@@ -1,5 +1,11 @@
 package com.marketmaker.view;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
@@ -17,11 +23,6 @@ import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
 
 /**
  * The application shell: the background window that hosts every container.
@@ -29,32 +30,53 @@ import java.awt.event.KeyEvent;
  * This class owns only layout and chrome (menu bar, toolbar, and the
  * {@link BorderLayout} that positions each panel). The individual containers
  * are injected as {@link JComponent}s so the shell stays decoupled from their
- * data-access wiring. Slots that aren't built yet are filled with 
+ * data-access wiring. Slots that aren't built yet are filled with
  * placeholders and will be swapped for real panels on respective branches.
  */
 public class MainWindow extends JFrame {
-
     private static final Color CONNECTED_GREEN = new Color(0x2E, 0x7D, 0x32);
+
+    private final JComponent watchlistPanel;
+    private final JComponent orderTicketPanel;
+    private final JComponent positionsPanel;
+    private final JComponent accountSummaryPanel;
 
     /**
      * @param orderHistoryPanel the finished Order &amp; Trade History container,
      *                          wired by the caller and dropped into the SOUTH slot
      */
     public MainWindow(JComponent orderHistoryPanel) {
+        this(null, null, null, orderHistoryPanel, null);
+    }
+
+    /**
+     * Every slot takes the real container, or null to keep its "coming soon" placeholder.
+     * The chart slot has no implementation yet, so it stays a placeholder.
+     */
+    public MainWindow(JComponent watchlistPanel, JComponent orderTicketPanel,
+                      JComponent positionsPanel, JComponent orderHistoryPanel,
+                      JComponent accountSummaryPanel) {
         super("MarketMaker — Paper Trading Simulator");
+        this.watchlistPanel = watchlistPanel;
+        this.orderTicketPanel = orderTicketPanel;
+        this.positionsPanel = positionsPanel;
+        this.accountSummaryPanel = accountSummaryPanel;
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setJMenuBar(buildMenuBar());
 
         setLayout(new BorderLayout());
         add(buildNorth(), BorderLayout.NORTH);
         add(buildCenter(), BorderLayout.CENTER);
-        add(orderHistoryPanel, BorderLayout.SOUTH);
+        // BorderLayout gives SOUTH whatever height it asks for, and a table-backed panel asks
+        // for a lot, which starved the centre row. Cap it so the trading column keeps its space.
+        add(slot(orderHistoryPanel, "Order & Trade History", 0, 230), BorderLayout.SOUTH);
 
         setSize(1450, 900);
         setLocationRelativeTo(null);
     }
 
-    // Menu bar 
+    // Menu bar
 
     private JMenuBar buildMenuBar() {
         JMenuBar bar = new JMenuBar();
@@ -149,7 +171,7 @@ public class MainWindow extends JFrame {
     private JPanel buildNorth() {
         JPanel north = new JPanel(new BorderLayout());
         north.add(buildToolBar(), BorderLayout.NORTH);
-        north.add(placeholder("Account Summary", 0, 46), BorderLayout.SOUTH);
+        north.add(slot(accountSummaryPanel, "Account Summary", 0, 46), BorderLayout.SOUTH);
         return north;
     }
 
@@ -172,7 +194,7 @@ public class MainWindow extends JFrame {
 
     private JPanel buildCenter() {
         JPanel center = new JPanel(new BorderLayout());
-        center.add(placeholder("Watchlist", 300, 0), BorderLayout.WEST);
+        center.add(slot(watchlistPanel, "Watchlist", 300, 0), BorderLayout.WEST);
         center.add(placeholder("Chart", 0, 0), BorderLayout.CENTER);
         center.add(buildEastColumn(), BorderLayout.EAST);
         return center;
@@ -180,12 +202,23 @@ public class MainWindow extends JFrame {
 
     private JPanel buildEastColumn() {
         JPanel east = new JPanel(new BorderLayout());
-        east.add(placeholder("Order Ticket", 360, 420), BorderLayout.CENTER);
-        east.add(placeholder("Positions", 360, 200), BorderLayout.SOUTH);
+        east.add(slot(orderTicketPanel, "Order Ticket", 430, 300), BorderLayout.CENTER);
+        east.add(slot(positionsPanel, "Positions", 430, 240), BorderLayout.SOUTH);
         return east;
     }
 
-    // ----- Shared placeholder for not-yet-built containers --------------
+    /** The real container at its slot size, or the placeholder while that panel doesn't exist. */
+    private static JComponent slot(JComponent panel, String title, int prefWidth, int prefHeight) {
+        if (panel == null) {
+            return placeholder(title, prefWidth, prefHeight);
+        }
+        if (prefWidth > 0 || prefHeight > 0) {
+            panel.setPreferredSize(new Dimension(prefWidth, prefHeight));
+        }
+        return panel;
+    }
+
+    // Shared placeholder for not-yet-built containers
 
     private static JPanel placeholder(String title, int prefWidth, int prefHeight) {
         JPanel panel = new JPanel(new BorderLayout());
