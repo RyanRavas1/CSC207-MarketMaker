@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import com.marketmaker.entities.Quote;
 import com.marketmaker.price_feed.PriceFeed;
 
+/** One quote per watched ticker, and the empty-list guard. */
 class WatchlistInteractorTest {
 
     @Test
@@ -18,8 +19,11 @@ class WatchlistInteractorTest {
         PriceFeed feed = ticker -> new Quote(ticker, 42.0, Instant.now());
         WatchlistResponseModel[] captured = new WatchlistResponseModel[1];
         WatchlistOutputBoundary presenter = new WatchlistOutputBoundary() {
-            public void presentWatchlist(WatchlistResponseModel r) { captured[0] = r; }
-            public void presentFailure(String e) { throw new AssertionError(e); }
+            @Override
+            public void presentWatchlist(WatchlistResponseModel response) { captured[0] = response; }
+
+            @Override
+            public void presentFailure(String errorMessage) { throw new AssertionError(errorMessage); }
         };
 
         new WatchlistInteractor(feed, presenter)
@@ -35,8 +39,11 @@ class WatchlistInteractorTest {
         PriceFeed feed = ticker -> new Quote(ticker, 1.0, Instant.now());
         boolean[] failed = {false};
         WatchlistOutputBoundary presenter = new WatchlistOutputBoundary() {
-            public void presentWatchlist(WatchlistResponseModel r) { }
-            public void presentFailure(String e) { failed[0] = true; }
+            @Override
+            public void presentWatchlist(WatchlistResponseModel response) { }
+
+            @Override
+            public void presentFailure(String errorMessage) { failed[0] = true; }
         };
 
         new WatchlistInteractor(feed, presenter).execute(new WatchlistRequestModel(List.of()));
