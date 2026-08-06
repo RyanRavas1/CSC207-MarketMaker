@@ -1,11 +1,5 @@
 package com.marketmaker.data_access.webhook;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,8 +9,15 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class FinnhubWebhookController implements HttpHandler {
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
+/** Receives Finnhub's webhook callbacks over an embedded HTTP server. */
+public class FinnhubWebhookController implements HttpHandler {
     private static final Logger LOGGER = Logger.getLogger(FinnhubWebhookController.class.getName());
 
     private static final String SECRET_HEADER = "X-Finnhub-Secret";
@@ -74,8 +75,8 @@ public class FinnhubWebhookController implements HttpHandler {
             dispatch(payload);
 
             sendResponse(exchange, 200, "OK");
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error handling Finnhub webhook", e);
+        } catch (Exception exception) {
+            LOGGER.log(Level.SEVERE, "Error handling Finnhub webhook", exception);
             sendResponse(exchange, 500, "Internal Server Error");
         } finally {
             exchange.close();
@@ -116,7 +117,7 @@ public class FinnhubWebhookController implements HttpHandler {
         return result == 0;
     }
 
-    /** Decouples this controller */
+    /** Decouples this controller from whatever consumes the events. */
     @FunctionalInterface
     public interface FinnhubWebhookEventHandler {
         void onWebhookEvent(String eventType, JSONObject fullPayload, JSONArray data);

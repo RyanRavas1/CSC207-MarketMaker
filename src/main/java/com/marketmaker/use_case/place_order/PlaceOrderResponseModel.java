@@ -8,7 +8,7 @@ public class PlaceOrderResponseModel {
     private final int newShareCount;
 
     public PlaceOrderResponseModel(String ticker, int quantity, double fillPrice,
-                                    double newCashBalance, int newShareCount) {
+                                   double newCashBalance, int newShareCount) {
         this.ticker = ticker;
         this.quantity = quantity;
         this.fillPrice = fillPrice;

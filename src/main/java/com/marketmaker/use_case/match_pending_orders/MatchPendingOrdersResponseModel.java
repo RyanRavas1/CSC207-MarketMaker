@@ -8,7 +8,7 @@ public class MatchPendingOrdersResponseModel {
     private final int newShareCount;
 
     public MatchPendingOrdersResponseModel(String orderId, String ticker, double fillPrice,
-                                            double newCashBalance, int newShareCount) {
+                                           double newCashBalance, int newShareCount) {
         this.orderId = orderId;
         this.ticker = ticker;
         this.fillPrice = fillPrice;

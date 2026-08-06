@@ -4,6 +4,7 @@ import com.marketmaker.data_access.AccountDAO;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Order;
 
+/** Cancels a pending order that hasn't filled yet. */
 public class CancelOrderInteractor implements CancelOrderInputBoundary {
     private final AccountDAO accountDAO;
     private final CancelOrderOutputBoundary presenter;

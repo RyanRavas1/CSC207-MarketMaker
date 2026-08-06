@@ -11,7 +11,7 @@ public class PlaceLimitStopOrderRequestModel {
     private final double triggerPrice;
 
     public PlaceLimitStopOrderRequestModel(String accountId, String ticker, Order.Side side,
-                                            Order.Type type, int quantity, double triggerPrice) {
+                                           Order.Type type, int quantity, double triggerPrice) {
         this.accountId = accountId;
         this.ticker = ticker;
         this.side = side;
