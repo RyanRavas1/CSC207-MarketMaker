@@ -1,10 +1,12 @@
 package com.marketmaker.data_access;
 
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
@@ -17,7 +19,6 @@ import com.marketmaker.data_access.exceptions.FinnhubApiRateLimitException;
  * Only returns string of the JSON response.
  */
 public class FinnhubApiClient {
-
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     private final String apiKey;
@@ -65,21 +66,18 @@ public class FinnhubApiClient {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) { // valid response status codes
                 return response.body();
-            }
-            else if (response.statusCode() == 429) { // know error code
+            } else if (response.statusCode() == 429) { // know error code
                 throw new FinnhubApiRateLimitException(
                         "Finnhub API returned status " + response.statusCode() + ": " + response.body());
-            }
-//          catch all else
-            else {
+            } else { // catch all
                 throw new FinnhubApiException(
                         "Finnhub API returned status " + response.statusCode() + ": " + response.body());
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new FinnhubApiException("Failed to reach Finnhub API", e);
-        } catch (java.io.IOException e) {
-            throw new FinnhubApiException("Failed to reach Finnhub API", e);
+            throw new FinnhubApiException("Failed to reach Finnhub API", exception);
+        } catch (IOException exception) {
+            throw new FinnhubApiException("Failed to reach Finnhub API", exception);
         }
     }
 
@@ -87,24 +85,30 @@ public class FinnhubApiClient {
         final String PATH_SEPARATOR = "/"; // variable for compliance with SonarQube error java:S1075
         String normalizedPath = endpointPath.startsWith("/") ? endpointPath : PATH_SEPARATOR + endpointPath;
 
-        StringBuilder query = new StringBuilder("token=").append(encode(apiKey));
+        // The key travels in the X-Finnhub-Token header, never here: a query string ends up in
+        // proxy logs, shell history and crash reports, and this one is a live credential.
+        StringBuilder query = new StringBuilder();
         if (params != null) {
             for (Map.Entry<String, String> entry : params.entrySet()) {
-                query.append("&")
-                     .append(encode(entry.getKey()))
+                if (query.length() > 0) {
+                    query.append("&");
+                }
+                query.append(encode(entry.getKey()))
                      .append("=")
                      .append(encode(entry.getValue()));
             }
         }
 
         try {
-//          Base path: https://finnhub.io/api/v1
-            URI uri = new URI("https", "finnhub.io", "/api/v1" + normalizedPath, query.toString(), null);
+            // Base path: https://finnhub.io/api/v1
+            // null, not "", so a paramless endpoint doesn't get a dangling "?".
+            String queryOrNull = query.length() == 0 ? null : query.toString();
+            URI uri = new URI("https", "finnhub.io", "/api/v1" + normalizedPath, queryOrNull, null);
             return uri.toASCIIString();
-        } catch (java.net.URISyntaxException e) {
-            throw new FinnhubApiException("Failed to build Finnhub API URL", e);
+        } catch (URISyntaxException exception) {
+            throw new FinnhubApiException("Failed to build Finnhub API URL", exception);
         }
-}
+    }
 
     private String encode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
