@@ -5,6 +5,7 @@ import java.time.Instant;
 /** Immutable once created. Record of an order fill.*/
 public class Trade {
     private final String id;
+    private final String orderId; // the order this fill came from
     private final String ticker;
     private final Order.Side side;
     private final int quantity;
@@ -12,9 +13,10 @@ public class Trade {
     private final Instant timestamp;
     private final Double realizedPnL; // null if this trade opened/added to a position
 
-    public Trade(String id, String ticker, Order.Side side, int quantity,
+    public Trade(String id, String orderId, String ticker, Order.Side side, int quantity,
                  double price, Instant timestamp, Double realizedPnL) {
         this.id = id;
+        this.orderId = orderId;
         this.ticker = ticker;
         this.side = side;
         this.quantity = quantity;
@@ -24,6 +26,7 @@ public class Trade {
     }
 
     public String getId() { return id; }
+    public String getOrderId() { return orderId; }
     public String getTicker() { return ticker; }
     public Order.Side getSide() { return side; }
     public int getQuantity() { return quantity; }
