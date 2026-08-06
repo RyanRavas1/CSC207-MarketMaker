@@ -3,7 +3,9 @@ package com.marketmaker.data_access;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.time.LocalDate;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -16,8 +18,15 @@ import com.marketmaker.entities.Trade;
 import com.marketmaker.use_case.load_account_data.LoadAccountDataAccessInterface;
 import com.marketmaker.use_case.save_account_data.SaveAccountDataAccessInterface;
 
-/** Persists a full account snapshot to a JSON file, one file per account id. */
-public class JsonFileAccountDataAccessObject implements SaveAccountDataAccessInterface, LoadAccountDataAccessInterface {
+/**
+ * Persists a full account snapshot to a JSON file, one file per account id.
+ *
+ * <p>Also serves as the {@link AccountDAO} the trading and reporting use cases take, so the
+ * running app reads and writes the same file the save/load use cases do rather than keeping
+ * a second copy of the account in memory.
+ */
+public class JsonFileAccountDataAccessObject
+        implements SaveAccountDataAccessInterface, LoadAccountDataAccessInterface, AccountDAO {
     private final Path directory;
 
     public JsonFileAccountDataAccessObject(Path directory) {
@@ -32,7 +41,12 @@ public class JsonFileAccountDataAccessObject implements SaveAccountDataAccessInt
     @Override
     public void save(Account account) {
         try {
-            Files.writeString(fileFor(account.getUserName()), toJson(account).toString(2));
+            // Written beside the target and moved into place: a crash mid-write would
+            // otherwise leave a half-serialised trade log where the real one used to be.
+            Path file = fileFor(account.getUserName());
+            Path temporary = file.resolveSibling(file.getFileName() + ".tmp");
+            Files.writeString(temporary, toJson(account).toString(2));
+            Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new AccountPersistenceException("Could not save account " + account.getUserName(), e);
         }
@@ -49,6 +63,13 @@ public class JsonFileAccountDataAccessObject implements SaveAccountDataAccessInt
         } catch (IOException e) {
             throw new AccountPersistenceException("Could not load account " + accountId, e);
         }
+    }
+
+    // AccountDAO names the same lookup "get"; load() already answers null when there is no
+    // file yet, which is the contract both interfaces expect.
+    @Override
+    public Account get(String accountId) {
+        return load(accountId);
     }
 
     private Path fileFor(String accountId) {
@@ -103,6 +124,12 @@ public class JsonFileAccountDataAccessObject implements SaveAccountDataAccessInt
 
         json.put("watchlist", new JSONArray(account.getWatchlist().getTickers()));
 
+        // Day P/L is measured against this mark, so it has to outlive the session.
+        json.put("dayStartEquity", account.getDayStartEquity());
+        if (account.getDayStartDate() != null) {
+            json.put("dayStartDate", account.getDayStartDate().toString());
+        }
+
         return json;
     }
 
@@ -140,6 +167,11 @@ public class JsonFileAccountDataAccessObject implements SaveAccountDataAccessInt
 
         for (Object ticker : json.getJSONArray("watchlist")) {
             account.getWatchlist().add((String) ticker);
+        }
+
+        if (json.has("dayStartDate")) {
+            account.setDayStartDate(LocalDate.parse(json.getString("dayStartDate")));
+            account.setDayStartEquity(json.optDouble("dayStartEquity", 0.0));
         }
 
         return account;
