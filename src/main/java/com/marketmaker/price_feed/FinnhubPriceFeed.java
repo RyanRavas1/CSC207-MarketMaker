@@ -24,6 +24,10 @@ public class FinnhubPriceFeed implements PriceFeed {
 
     private final FinnhubApiClient client;
     private final Map<String, Quote> cache = new ConcurrentHashMap<>();
+    // When each cached quote was fetched. Kept apart from the quote's own timestamp, which is
+    // when the market last traded it — after the close those are hours apart, and expiring the
+    // cache against a market timestamp would refetch a price that cannot change.
+    private final Map<String, Instant> fetchedAt = new ConcurrentHashMap<>();
 
     public FinnhubPriceFeed(FinnhubApiClient client) {
         this.client = client;
@@ -32,7 +36,9 @@ public class FinnhubPriceFeed implements PriceFeed {
     @Override
     public Quote getQuote(String ticker) {
         Quote cached = cache.get(ticker);
-        if (cached != null && Duration.between(cached.getTimestamp(), Instant.now()).compareTo(TTL) < 0) {
+        Instant fetched = fetchedAt.get(ticker);
+        if (cached != null && fetched != null
+                && Duration.between(fetched, Instant.now()).compareTo(TTL) < 0) {
             return cached;
         }
 
@@ -45,13 +51,20 @@ public class FinnhubPriceFeed implements PriceFeed {
 
         // "c" is the current price. Finnhub answers an unknown symbol with a 200 and every
         // field zeroed rather than an error, so a zero here is a bad ticker, not a free stock.
-        double price = new JSONObject(body).optDouble("c", 0.0);
+        JSONObject json = new JSONObject(body);
+        double price = json.optDouble("c", 0.0);
         if (price <= 0.0) {
             throw new PriceFeedException("No quote for " + ticker + " — check the ticker symbol.");
         }
 
-        Quote quote = new Quote(ticker, price, Instant.now());
+        // "t" is when the market last traded this price. Stamping the quote with the time we
+        // happened to ask instead would show a closing price as though it arrived just now.
+        long tradedAt = json.optLong("t", 0L);
+        Instant timestamp = tradedAt > 0 ? Instant.ofEpochSecond(tradedAt) : Instant.now();
+
+        Quote quote = new Quote(ticker, price, timestamp);
         cache.put(ticker, quote);
+        fetchedAt.put(ticker, Instant.now());
         return quote;
     }
 }
