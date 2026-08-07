@@ -20,22 +20,38 @@ import com.marketmaker.config.exceptions.MissingEnvironmentVariableException;
 import com.marketmaker.data_access.AccountDAO;
 import com.marketmaker.data_access.FinnhubApiClient;
 import com.marketmaker.data_access.JsonFileAccountDataAccessObject;
+import com.marketmaker.data_access.PolledQuoteSubscription;
 import com.marketmaker.data_access.PriceFeedQuoteDataAccessObject;
 import com.marketmaker.data_access.StubHistoricalDataAccessObject;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Quote;
 import com.marketmaker.interface_adapter.CandlestickChartPresenter;
+import com.marketmaker.interface_adapter.ChartController;
+import com.marketmaker.interface_adapter.OrderFeedbackPresenter;
 import com.marketmaker.interface_adapter.OrderHistoryPresenter;
+import com.marketmaker.interface_adapter.OrderTicketController;
 import com.marketmaker.interface_adapter.PortfolioSummaryPresenter;
 import com.marketmaker.interface_adapter.PositionsPresenter;
 import com.marketmaker.interface_adapter.ViewModel;
+import com.marketmaker.interface_adapter.WatchlistController;
 import com.marketmaker.price_feed.FinnhubPriceFeed;
 import com.marketmaker.price_feed.PriceFeed;
 import com.marketmaker.price_feed.ReplayPriceFeed;
+import com.marketmaker.use_case.add_to_watchlist.AddToWatchlistInteractor;
+import com.marketmaker.use_case.add_to_watchlist.AddToWatchlistOutputBoundary;
+import com.marketmaker.use_case.add_to_watchlist.AddToWatchlistResponseModel;
+import com.marketmaker.use_case.match_pending_orders.MatchPendingOrdersInteractor;
+import com.marketmaker.use_case.match_pending_orders.MatchPendingOrdersOutputBoundary;
+import com.marketmaker.use_case.match_pending_orders.MatchPendingOrdersRequestModel;
+import com.marketmaker.use_case.match_pending_orders.MatchPendingOrdersResponseModel;
+import com.marketmaker.use_case.place_limit_stop_order.PlaceLimitStopOrderInteractor;
+import com.marketmaker.use_case.place_order.PlaceOrderInteractor;
+import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistInteractor;
+import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistOutputBoundary;
+import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistResponseModel;
 import com.marketmaker.use_case.search_ticker.TickerDataAccessInterface;
 import com.marketmaker.use_case.view_candlestick_chart.Resolution;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartInteractor;
-import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartRequestModel;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
 import com.marketmaker.use_case.view_order_history.ViewOrderHistoryInteractor;
 import com.marketmaker.use_case.view_order_history.ViewOrderHistoryRequestModel;
@@ -54,7 +70,7 @@ public class Main {
     private static final String ACCOUNT_ID = "demo";
     private static final double STARTING_CASH = 10_000.0;
     private static final String CHART_TICKER = "AAPL";
-    private static final List<String> WATCHLIST = List.of("AAPL", "MSFT", "NVDA");
+    private static final List<String> DEFAULT_WATCHLIST = List.of("AAPL", "MSFT", "NVDA");
     // Slower than the price feed's own cache, so an idle screen re-polls rather than
     // re-serving the same quote over and over.
     private static final int REFRESH_INTERVAL_MS = 10_000;
@@ -81,10 +97,7 @@ public class Main {
         PriceFeed priceFeed = createPriceFeed();
         TickerDataAccessInterface quotes = new PriceFeedQuoteDataAccessObject(priceFeed);
         AccountDAO accountDAO = new JsonFileAccountDataAccessObject(Path.of(DATA_DIRECTORY));
-        if (accountDAO.get(ACCOUNT_ID) == null) {
-            // First launch: open the paper account with its fixed starting balance.
-            accountDAO.save(new Account(ACCOUNT_ID, STARTING_CASH));
-        }
+        seedAccount(accountDAO);
 
         SwingUtilities.invokeLater(() -> {
             ViewModel<ViewPortfolioSummaryResponseModel> summary = new ViewModel<>();
@@ -92,8 +105,7 @@ public class Main {
             ViewModel<ViewOrderHistoryResponseModel> orderHistory = new ViewModel<>();
             ViewModel<ViewCandlestickChartResponseModel> chart = new ViewModel<>();
             ViewModel<List<Quote>> watchlist = new ViewModel<>();
-
-            new DashboardFrame(summary, positions, orderHistory, chart, watchlist).setVisible(true);
+            ViewModel<String> status = new ViewModel<>();
 
             ViewPortfolioSummaryInteractor summaryInteractor = new ViewPortfolioSummaryInteractor(
                     accountDAO, quotes, new PortfolioSummaryPresenter(summary));
@@ -101,22 +113,74 @@ public class Main {
                     accountDAO, quotes, new PositionsPresenter(positions));
             ViewOrderHistoryInteractor historyInteractor = new ViewOrderHistoryInteractor(
                     accountDAO, new OrderHistoryPresenter(orderHistory));
-            // ponytail: the chart still reads generated candles — swap in a real historical
-            // source once the team settles which provider serves them.
+            // ponytail: generated candles — Finnhub's free tier refuses /stock/candle, so the
+            // panel labels itself as sample data until a historical provider is settled.
             ViewCandlestickChartInteractor chartInteractor = new ViewCandlestickChartInteractor(
                     new StubHistoricalDataAccessObject(), new CandlestickChartPresenter(chart));
+            ChartController chartController = new ChartController(
+                    chartInteractor, CHART_TICKER, Resolution.FIVE_MINUTE);
 
-            Runnable refresh = () -> WORKER.execute(() -> {
+            Runnable[] refreshHolder = new Runnable[1];
+            Runnable refresh = () -> refreshHolder[0].run();
+
+            OrderFeedbackPresenter feedback = new OrderFeedbackPresenter(status, refresh);
+            OrderTicketController ticketController = new OrderTicketController(
+                    new PlaceOrderInteractor(accountDAO, priceFeed, feedback),
+                    new PlaceLimitStopOrderInteractor(accountDAO, feedback),
+                    ACCOUNT_ID);
+            MatchPendingOrdersInteractor matchInteractor = new MatchPendingOrdersInteractor(
+                    accountDAO, silentMatcher());
+            WatchlistController watchlistController = new WatchlistController(
+                    addToWatchlist(accountDAO), removeFromWatchlist(accountDAO), ACCOUNT_ID, refresh);
+
+            refreshHolder[0] = () -> WORKER.execute(() -> {
                 summaryInteractor.execute(new ViewPortfolioSummaryRequestModel(ACCOUNT_ID));
                 positionsInteractor.execute(new ViewPositionsRequestModel(ACCOUNT_ID));
                 historyInteractor.execute(new ViewOrderHistoryRequestModel(ACCOUNT_ID));
-                watchlist.setState(quote(priceFeed, WATCHLIST));
+                chartController.reload();
+
+                // A resting order fills off an incoming price, so every quote we fetch is
+                // offered to the matcher before it reaches the screen.
+                List<Quote> latest = quote(priceFeed, watchedTickers(accountDAO));
+                for (Quote quote : latest) {
+                    matchInteractor.execute(new MatchPendingOrdersRequestModel(ACCOUNT_ID, quote));
+                }
+                watchlist.setState(latest);
             });
 
-            chartInteractor.execute(new ViewCandlestickChartRequestModel(CHART_TICKER, Resolution.FIVE_MINUTE));
+            Timer timer = new Timer(REFRESH_INTERVAL_MS, event -> refresh.run());
+            new DashboardFrame(ticketController, watchlistController, chartController, status,
+                    refresh, live -> toggle(timer, live), summary, positions, orderHistory,
+                    chart, watchlist).setVisible(true);
+
             refresh.run();
-            new Timer(REFRESH_INTERVAL_MS, event -> refresh.run()).start();
+            timer.start();
         });
+    }
+
+    private static void toggle(Timer timer, boolean live) {
+        if (live) {
+            timer.start();
+        } else {
+            timer.stop();
+        }
+    }
+
+    /** First launch: open the paper account with its fixed starting balance and watchlist. */
+    private static void seedAccount(AccountDAO accountDAO) {
+        if (accountDAO.get(ACCOUNT_ID) != null) {
+            return;
+        }
+        Account account = new Account(ACCOUNT_ID, STARTING_CASH);
+        for (String ticker : DEFAULT_WATCHLIST) {
+            account.getWatchlist().add(ticker);
+        }
+        accountDAO.save(account);
+    }
+
+    private static List<String> watchedTickers(AccountDAO accountDAO) {
+        Account account = accountDAO.get(ACCOUNT_ID);
+        return account == null ? List.of() : List.copyOf(account.getWatchlist().getTickers());
     }
 
     /** One quote per watched ticker; a symbol the feed can't price is left off the table. */
@@ -131,6 +195,45 @@ public class Main {
             }
         }
         return quotes;
+    }
+
+    // The matcher reports each fill it makes; the screens are reloaded on the same tick
+    // anyway, so there is nothing extra for this to do.
+    private static MatchPendingOrdersOutputBoundary silentMatcher() {
+        return new MatchPendingOrdersOutputBoundary() {
+            @Override
+            public void presentFill(MatchPendingOrdersResponseModel response) {
+                LOGGER.info(() -> "Filled resting order on " + response.getTicker());
+            }
+        };
+    }
+
+    private static AddToWatchlistInteractor addToWatchlist(AccountDAO accountDAO) {
+        return new AddToWatchlistInteractor(accountDAO, new PolledQuoteSubscription(),
+                quote -> { }, new AddToWatchlistOutputBoundary() {
+            @Override
+            public void presentSuccess(AddToWatchlistResponseModel response) {
+            }
+
+            @Override
+            public void presentFailure(String errorMessage) {
+                LOGGER.warning(errorMessage);
+            }
+        });
+    }
+
+    private static RemoveFromWatchlistInteractor removeFromWatchlist(AccountDAO accountDAO) {
+        return new RemoveFromWatchlistInteractor(accountDAO, new PolledQuoteSubscription(),
+                new RemoveFromWatchlistOutputBoundary() {
+            @Override
+            public void presentSuccess(RemoveFromWatchlistResponseModel response) {
+            }
+
+            @Override
+            public void presentFailure(String errorMessage) {
+                LOGGER.warning(errorMessage);
+            }
+        });
     }
 
     /**

@@ -6,6 +6,7 @@ import java.awt.FlowLayout;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -13,7 +14,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import com.marketmaker.entities.Quote;
+import com.marketmaker.interface_adapter.ChartController;
+import com.marketmaker.interface_adapter.OrderTicketController;
 import com.marketmaker.interface_adapter.ViewModel;
+import com.marketmaker.interface_adapter.WatchlistController;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
 import com.marketmaker.use_case.view_order_history.ViewOrderHistoryResponseModel;
 import com.marketmaker.use_case.view_portfolio_summary.ViewPortfolioSummaryResponseModel;
@@ -33,8 +37,19 @@ public class DashboardFrame extends JFrame {
     private final ViewModel<ViewOrderHistoryResponseModel> orderHistory;
     private final ViewModel<ViewCandlestickChartResponseModel> chart;
     private final ViewModel<List<Quote>> watchlist;
+    private final OrderTicketPanel ticket;
+    private final WatchlistController watchlistController;
+    private final ChartController chartController;
+    private final Runnable onRefresh;
+    private final java.util.function.Consumer<Boolean> onLiveToggle;
 
-    public DashboardFrame(ViewModel<ViewPortfolioSummaryResponseModel> summary,
+    public DashboardFrame(OrderTicketController ticketController,
+                          WatchlistController watchlistController,
+                          ChartController chartController,
+                          ViewModel<String> status,
+                          Runnable onRefresh,
+                          java.util.function.Consumer<Boolean> onLiveToggle,
+                          ViewModel<ViewPortfolioSummaryResponseModel> summary,
                           ViewModel<ViewPositionsResponseModel> positions,
                           ViewModel<ViewOrderHistoryResponseModel> orderHistory,
                           ViewModel<ViewCandlestickChartResponseModel> chart,
@@ -45,6 +60,12 @@ public class DashboardFrame extends JFrame {
         this.orderHistory = orderHistory;
         this.chart = chart;
         this.watchlist = watchlist;
+        // Built before the chrome, because the toolbar's Buy and Sell drive it.
+        this.watchlistController = watchlistController;
+        this.chartController = chartController;
+        this.onRefresh = onRefresh;
+        this.onLiveToggle = onLiveToggle;
+        this.ticket = new OrderTicketPanel(summary, status, ticketController);
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1440, 940);
@@ -75,13 +96,23 @@ public class DashboardFrame extends JFrame {
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         actions.setOpaque(false);
-        actions.add(ViewComponents.button("Buy"));
-        actions.add(ViewComponents.button("Sell"));
-        actions.add(ViewComponents.button("Refresh"));
+        // Buy and Sell are shortcuts into the ticket, which is where an order is actually
+        // built — they set the side rather than placing anything on their own.
+        JButton buy = ViewComponents.button("Buy");
+        buy.addActionListener(event -> ticket.chooseSide(true));
+        JButton sell = ViewComponents.button("Sell");
+        sell.addActionListener(event -> ticket.chooseSide(false));
+        JButton refresh = ViewComponents.button("Refresh");
+        refresh.addActionListener(event -> onRefresh.run());
+        actions.add(buy);
+        actions.add(sell);
+        actions.add(refresh);
 
         JCheckBox liveData = new JCheckBox("Live data", true);
         liveData.setFont(UiTheme.BASE);
         liveData.setOpaque(false);
+        // Unticking stops the polling: useful when the free tier's rate limit is close.
+        liveData.addActionListener(event -> onLiveToggle.accept(liveData.isSelected()));
         actions.add(liveData);
 
         JPanel status = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
@@ -102,8 +133,8 @@ public class DashboardFrame extends JFrame {
         body.setBackground(UiTheme.BAR_BG);
         body.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        body.add(new WatchlistPanel(watchlist), BorderLayout.WEST);
-        body.add(new ChartPanel(chart), BorderLayout.CENTER);
+        body.add(new WatchlistPanel(watchlist, watchlistController), BorderLayout.WEST);
+        body.add(new ChartPanel(chart, chartController), BorderLayout.CENTER);
         body.add(buildRightColumn(), BorderLayout.EAST);
         body.add(new OrderHistoryPanel(orderHistory), BorderLayout.SOUTH);
         return body;
@@ -113,7 +144,7 @@ public class DashboardFrame extends JFrame {
         JPanel column = new JPanel(new BorderLayout(0, 8));
         column.setOpaque(false);
         column.setPreferredSize(new Dimension(358, 593));
-        column.add(new OrderTicketPanel(summary), BorderLayout.NORTH);
+        column.add(ticket, BorderLayout.NORTH);
         column.add(new PositionsPanel(positions), BorderLayout.CENTER);
         return column;
     }

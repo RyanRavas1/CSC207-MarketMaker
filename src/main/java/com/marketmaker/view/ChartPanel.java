@@ -7,13 +7,16 @@ import java.time.Instant;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 import com.marketmaker.entities.Candle;
+import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.ViewModel;
+import com.marketmaker.use_case.view_candlestick_chart.Resolution;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
 
 /**
@@ -46,9 +49,14 @@ public class ChartPanel extends TitledPanel {
     private final JLabel low = statValue();
     private final JLabel close = statValue();
     private final JLabel volume = statValue();
+    private final JLabel source = ViewComponents.label("SAMPLE DATA — not a real price series",
+            UiTheme.BASE_BOLD, UiTheme.RED, SwingConstants.LEFT);
 
-    public ChartPanel(ViewModel<ViewCandlestickChartResponseModel> viewModel) {
+    private final ChartController controller;
+
+    public ChartPanel(ViewModel<ViewCandlestickChartResponseModel> viewModel, ChartController controller) {
         super("Chart");
+        this.controller = controller;
 
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
@@ -100,6 +108,10 @@ public class ChartPanel extends TitledPanel {
         quote.add(ticker);
         quote.add(last);
         quote.add(change);
+        // Says on its face where these bars come from. Finnhub's free tier refuses
+        // /stock/candle, so until a historical provider is settled these are generated —
+        // and generated prices next to a live watchlist are indistinguishable otherwise.
+        quote.add(source);
 
         row.add(quote, BorderLayout.WEST);
         row.add(buildIntervalPicker(), BorderLayout.EAST);
@@ -110,10 +122,16 @@ public class ChartPanel extends TitledPanel {
         JPanel picker = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         picker.setOpaque(false);
         picker.add(ViewComponents.caption("Interval:"));
-        picker.add(ViewComponents.button("1m"));
-        picker.add(ViewComponents.button("5m"));
-        picker.add(ViewComponents.button("1D"));
+        picker.add(intervalButton("1m", Resolution.ONE_MINUTE));
+        picker.add(intervalButton("5m", Resolution.FIVE_MINUTE));
+        picker.add(intervalButton("1D", Resolution.ONE_DAY));
         return picker;
+    }
+
+    private JButton intervalButton(String text, Resolution resolution) {
+        JButton button = ViewComponents.button(text);
+        button.addActionListener(event -> controller.showInterval(resolution));
+        return button;
     }
 
     private JComponent buildOhlcRow() {
