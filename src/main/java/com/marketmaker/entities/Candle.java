@@ -1,6 +1,6 @@
 package com.marketmaker.entities;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /** One OHLC bar for the chart. */
 public class Candle {
@@ -11,10 +11,10 @@ public class Candle {
     private final double low;
     private final double close;
     private final double volume;
-    private final Instant timestamp;
+    private final LocalDateTime timestamp;
 
     public Candle(String ticker, String interval, double open, double high,
-                  double low, double close, double volume, Instant timestamp) {
+                  double low, double close, double volume, LocalDateTime timestamp) {
         this.ticker = ticker;
         this.interval = interval;
         this.open = open;
@@ -32,5 +32,5 @@ public class Candle {
     public double getLow() { return low; }
     public double getClose() { return close; }
     public double getVolume() { return volume; }
-    public Instant getTimestamp() { return timestamp; }
+    public LocalDateTime getTimestamp() { return timestamp; }
 }
