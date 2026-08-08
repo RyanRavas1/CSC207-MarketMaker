@@ -26,9 +26,19 @@ public class ViewCandlestickChartInteractor implements ViewCandlestickChartInput
             return;
         }
 
-        List<Candle> candles = dataAccess.fetchCandles(ticker.toUpperCase(), request.getResolution());
+        List<Candle> candles;
+        try {
+            candles = dataAccess.fetchCandles(ticker.toUpperCase(), request.getResolution());
+        }
+        catch (HistoricalDataUnavailableException exception) {
+            // The provider explained itself, so pass that on rather than blaming the ticker.
+            presenter.presentFailure(exception.getMessage());
+            return;
+        }
+
         if (candles == null || candles.isEmpty()) {
-            presenter.presentFailure("No historical data available for " + ticker + ".");
+            presenter.presentFailure("No price history for " + ticker.toUpperCase()
+                    + " — check the symbol.");
             return;
         }
 

@@ -121,10 +121,9 @@ public class ChartPanel extends TitledPanel {
     private JComponent buildIntervalPicker() {
         JPanel picker = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         picker.setOpaque(false);
-        picker.add(ViewComponents.caption("Interval:"));
-        picker.add(intervalButton("1m", Resolution.ONE_MINUTE));
-        picker.add(intervalButton("5m", Resolution.FIVE_MINUTE));
-        picker.add(intervalButton("1D", Resolution.ONE_DAY));
+        picker.add(ViewComponents.caption("Range:"));
+        picker.add(intervalButton("1W", Resolution.ONE_WEEK));
+        picker.add(intervalButton("1M", Resolution.ONE_MONTH));
         return picker;
     }
 

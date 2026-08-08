@@ -22,7 +22,8 @@ import com.marketmaker.data_access.FinnhubApiClient;
 import com.marketmaker.data_access.JsonFileAccountDataAccessObject;
 import com.marketmaker.data_access.PolledQuoteSubscription;
 import com.marketmaker.data_access.PriceFeedQuoteDataAccessObject;
-import com.marketmaker.data_access.StubHistoricalDataAccessObject;
+import com.marketmaker.data_access.AlphaVantageHistoricalDataAccessObject;
+import com.marketmaker.data_access.CandleFileCache;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Quote;
 import com.marketmaker.interface_adapter.CandlestickChartPresenter;
@@ -50,6 +51,7 @@ import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistInterac
 import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistOutputBoundary;
 import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistResponseModel;
 import com.marketmaker.use_case.search_ticker.TickerDataAccessInterface;
+import com.marketmaker.use_case.view_candlestick_chart.HistoricalDataAccessInterface;
 import com.marketmaker.use_case.view_candlestick_chart.Resolution;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartInteractor;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
@@ -113,12 +115,10 @@ public class Main {
                     accountDAO, quotes, new PositionsPresenter(positions));
             ViewOrderHistoryInteractor historyInteractor = new ViewOrderHistoryInteractor(
                     accountDAO, new OrderHistoryPresenter(orderHistory));
-            // ponytail: generated candles — Finnhub's free tier refuses /stock/candle, so the
-            // panel labels itself as sample data until a historical provider is settled.
             ViewCandlestickChartInteractor chartInteractor = new ViewCandlestickChartInteractor(
-                    new StubHistoricalDataAccessObject(), new CandlestickChartPresenter(chart));
+                    createHistoricalData(), new CandlestickChartPresenter(chart));
             ChartController chartController = new ChartController(
-                    chartInteractor, CHART_TICKER, Resolution.FIVE_MINUTE);
+                    chartInteractor, CHART_TICKER, Resolution.ONE_MONTH);
 
             Runnable[] refreshHolder = new Runnable[1];
             Runnable refresh = () -> refreshHolder[0].run();
@@ -240,6 +240,18 @@ public class Main {
      * Live quotes when a Finnhub key is configured, the replay feed when one isn't, so the
      * app still runs for anyone who hasn't set up a key.
      */
+    private static HistoricalDataAccessInterface createHistoricalData() {
+        try {
+            return new AlphaVantageHistoricalDataAccessObject(EnvLoader.get("ALPHAVANTAGE_API_KEY"),
+                    new CandleFileCache(Path.of(DATA_DIRECTORY, "candles")));
+        } catch (MissingEnvironmentVariableException exception) {
+            LOGGER.info("No ALPHAVANTAGE_API_KEY found — the chart will stay empty. "
+                    + "Copy src/.env.example to .env and add a key for price history.");
+            // Better an empty chart that says so than invented prices beside a live watchlist.
+            return (ticker, resolution) -> List.of();
+        }
+    }
+
     private static PriceFeed createPriceFeed() {
         try {
             return new FinnhubPriceFeed(new FinnhubApiClient(EnvLoader.get("FINNHUB_API_KEY")));
