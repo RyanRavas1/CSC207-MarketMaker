@@ -1,5 +1,7 @@
 package com.marketmaker.use_case.view_portfolio_summary;
 
+import java.time.LocalDate;
+
 import com.marketmaker.data_access.AccountDAO;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Position;
@@ -29,20 +31,22 @@ public class ViewPortfolioSummaryInteractor implements ViewPortfolioSummaryInput
 
         double cash = account.getUserBalance();
         double holdingsValue = 0.0;
-        // Daily P/L isn't tracked against a start-of-day snapshot yet, so this
-        // is approximated as the unrealized P/L across current holdings.
-        double dailyPnL = 0.0;
 
         for (Position position : account.getHoldings()) {
             Quote quote = quoteDataAccess.fetchQuote(position.getTicker());
             double currentPrice = quote != null ? quote.getPrice() : position.getAveragePrice();
             holdingsValue += currentPrice * position.getShares();
-            dailyPnL += (currentPrice - position.getAveragePrice()) * position.getShares();
         }
 
         double totalEquity = cash + holdingsValue;
-        // No margin is modeled, so buying power is just the available cash.
-        double buyingPower = cash;
+        // Measured against what the account was worth at the day's first valuation, so it
+        // reads zero on a flat day rather than showing every gain ever made on a holding.
+        double dailyPnL = account.dailyPnL(LocalDate.now(), totalEquity);
+        // The first valuation of the day sets that mark, which has to outlive the process.
+        accountDAO.save(account);
+        // No margin is modeled, so buying power is cash — less whatever resting buy orders
+        // have already committed, which is money the user cannot spend twice.
+        double buyingPower = account.buyingPower();
 
         presenter.presentSuccess(new ViewPortfolioSummaryResponseModel(cash, buyingPower, totalEquity, dailyPnL));
     }
