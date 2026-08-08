@@ -15,18 +15,15 @@ import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Order;
 import com.marketmaker.entities.Position;
 import com.marketmaker.entities.Trade;
-import com.marketmaker.use_case.load_account_data.LoadAccountDataAccessInterface;
-import com.marketmaker.use_case.save_account_data.SaveAccountDataAccessInterface;
 
 /**
  * Persists a full account snapshot to a JSON file, one file per account id.
  *
- * <p>Also serves as the {@link AccountDAO} the trading and reporting use cases take, so the
- * running app reads and writes the same file the save/load use cases do rather than keeping
- * a second copy of the account in memory.
+ * <p>This is the {@link AccountDAO} every trading and reporting use case takes, so saving is
+ * not a separate step anyone has to remember: an interactor that changes the account saves it
+ * here, and the next launch reads it back.
  */
-public class JsonFileAccountDataAccessObject
-        implements SaveAccountDataAccessInterface, LoadAccountDataAccessInterface, AccountDAO {
+public class JsonFileAccountDataAccessObject implements AccountDAO {
     private final Path directory;
 
     public JsonFileAccountDataAccessObject(Path directory) {
@@ -52,7 +49,7 @@ public class JsonFileAccountDataAccessObject
         }
     }
 
-    @Override
+    /** Reads the account back off disk. Kept public because it names what it does. */
     public Account load(String accountId) {
         Path file = fileFor(accountId);
         if (!Files.exists(file)) {
