@@ -1,5 +1,7 @@
 package com.marketmaker.interface_adapter;
 
+import java.util.concurrent.Executor;
+
 import com.marketmaker.use_case.view_candlestick_chart.Resolution;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartInputBoundary;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartRequestModel;
@@ -9,16 +11,21 @@ import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartReque
  *
  * <p>Remembers the ticker and interval currently on screen so a refresh can repeat the same
  * request without the view having to hand them back.
+ *
+ * <p>Loading is handed to {@code worker} because fetching history is an HTTP round trip, and
+ * a click that blocks the event dispatch thread freezes the whole window while it waits.
  */
 public class ChartController {
     private final ViewCandlestickChartInputBoundary interactor;
+    private final Executor worker;
 
     private String ticker;
     private Resolution resolution;
 
-    public ChartController(ViewCandlestickChartInputBoundary interactor,
+    public ChartController(ViewCandlestickChartInputBoundary interactor, Executor worker,
                            String ticker, Resolution resolution) {
         this.interactor = interactor;
+        this.worker = worker;
         this.ticker = ticker;
         this.resolution = resolution;
     }
@@ -34,7 +41,8 @@ public class ChartController {
     }
 
     public void reload() {
-        interactor.execute(new ViewCandlestickChartRequestModel(ticker, resolution));
+        worker.execute(() -> interactor.execute(
+                new ViewCandlestickChartRequestModel(ticker, resolution)));
     }
 
     public Resolution getResolution() { return resolution; }

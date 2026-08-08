@@ -34,7 +34,7 @@ public class WatchlistInteractor implements WatchlistInputBoundary {
             // stop every other ticker from ever refreshing again.
             try {
                 Quote quote = priceFeed.getQuote(ticker);
-                rows.add(new WatchlistResponseModel.Row(ticker, quote.getPrice()));
+                rows.add(new WatchlistResponseModel.Row(ticker, quote.getPrice(), quote.getTimestamp()));
             } catch (PriceFeedException exception) {
                 unavailable.add(ticker);
                 lastError = exception.getMessage();

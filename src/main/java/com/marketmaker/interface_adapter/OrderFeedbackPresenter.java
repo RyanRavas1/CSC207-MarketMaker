@@ -1,5 +1,7 @@
 package com.marketmaker.interface_adapter;
 
+import com.marketmaker.use_case.cancel_order.CancelOrderOutputBoundary;
+import com.marketmaker.use_case.cancel_order.CancelOrderResponseModel;
 import com.marketmaker.use_case.place_limit_stop_order.PlaceLimitStopOrderOutputBoundary;
 import com.marketmaker.use_case.place_limit_stop_order.PlaceLimitStopOrderResponseModel;
 import com.marketmaker.use_case.place_order.PlaceOrderOutputBoundary;
@@ -9,11 +11,12 @@ import com.marketmaker.view.Format;
 /**
  * Says what happened to an order, in one line under the ticket.
  *
- * <p>Serves both order use cases because the ticket is one form: whichever way an order was
- * routed, the user is looking at the same place for the answer. Every outcome also reloads
- * the screens that a fill changes — cash, holdings and the log.
+ * <p>Serves every order use case because an order's outcome reads the same wherever it came
+ * from: placed, rested or cancelled. Each outcome also reloads the screens that it changes —
+ * cash, holdings and the log.
  */
-public class OrderFeedbackPresenter implements PlaceOrderOutputBoundary, PlaceLimitStopOrderOutputBoundary {
+public class OrderFeedbackPresenter implements PlaceOrderOutputBoundary,
+        PlaceLimitStopOrderOutputBoundary, CancelOrderOutputBoundary {
     private final ViewModel<String> status;
     private final Runnable refresh;
 
@@ -34,6 +37,12 @@ public class OrderFeedbackPresenter implements PlaceOrderOutputBoundary, PlaceLi
     public void presentSuccess(PlaceLimitStopOrderResponseModel response) {
         status.setState(String.format("%s order on %s resting at $%s.",
                 response.getType(), response.getTicker(), Format.money(response.getTriggerPrice())));
+        refresh.run();
+    }
+
+    @Override
+    public void presentSuccess(CancelOrderResponseModel response) {
+        status.setState("Order cancelled.");
         refresh.run();
     }
 

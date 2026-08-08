@@ -1,5 +1,6 @@
 package com.marketmaker.use_case.watchlist;
 
+import java.time.Instant;
 import java.util.List;
 
 public class WatchlistResponseModel {
@@ -8,14 +9,19 @@ public class WatchlistResponseModel {
     public static class Row {
         private final String ticker;
         private final double price;
+        // When the market last traded at this price, not when we asked for it: after the
+        // close those are hours apart, and the view says so rather than claiming it is live.
+        private final Instant tradedAt;
 
-        public Row(String ticker, double price) {
+        public Row(String ticker, double price, Instant tradedAt) {
             this.ticker = ticker;
             this.price = price;
+            this.tradedAt = tradedAt;
         }
 
         public String getTicker() { return ticker; }
         public double getPrice() { return price; }
+        public Instant getTradedAt() { return tradedAt; }
     }
 
     private final List<Row> rows; // one row per ticker that quoted, same order as the request

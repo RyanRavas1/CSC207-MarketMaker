@@ -33,8 +33,10 @@ import com.marketmaker.interface_adapter.OrderHistoryPresenter;
 import com.marketmaker.interface_adapter.OrderTicketController;
 import com.marketmaker.interface_adapter.PortfolioSummaryPresenter;
 import com.marketmaker.interface_adapter.PositionsPresenter;
+import com.marketmaker.interface_adapter.TickerSearchPresenter;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.interface_adapter.WatchlistController;
+import com.marketmaker.interface_adapter.WatchlistPresenter;
 import com.marketmaker.price_feed.FinnhubPriceFeed;
 import com.marketmaker.price_feed.PriceFeed;
 import com.marketmaker.price_feed.ReplayPriceFeed;
@@ -50,7 +52,11 @@ import com.marketmaker.use_case.place_order.PlaceOrderInteractor;
 import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistInteractor;
 import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistOutputBoundary;
 import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistResponseModel;
+import com.marketmaker.use_case.receive_live_quotes.ReceiveLiveQuoteUpdatesInteractor;
+import com.marketmaker.use_case.search_ticker.SearchTickerInteractor;
 import com.marketmaker.use_case.search_ticker.TickerDataAccessInterface;
+import com.marketmaker.use_case.watchlist.WatchlistInteractor;
+import com.marketmaker.use_case.watchlist.WatchlistRequestModel;
 import com.marketmaker.use_case.view_candlestick_chart.HistoricalDataAccessInterface;
 import com.marketmaker.use_case.view_candlestick_chart.Resolution;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartInteractor;
@@ -118,7 +124,7 @@ public class Main {
             ViewCandlestickChartInteractor chartInteractor = new ViewCandlestickChartInteractor(
                     createHistoricalData(), new CandlestickChartPresenter(chart));
             ChartController chartController = new ChartController(
-                    chartInteractor, CHART_TICKER, Resolution.ONE_MONTH);
+                    chartInteractor, WORKER, CHART_TICKER, Resolution.ONE_MONTH);
 
             Runnable[] refreshHolder = new Runnable[1];
             Runnable refresh = () -> refreshHolder[0].run();
@@ -130,22 +136,32 @@ public class Main {
                     ACCOUNT_ID);
             MatchPendingOrdersInteractor matchInteractor = new MatchPendingOrdersInteractor(
                     accountDAO, silentMatcher());
+            // The app polls rather than streams, so subscribing is a no-op today; keeping the
+            // use case in the path means a websocket adapter is a swap, not a rewrite.
+            ReceiveLiveQuoteUpdatesInteractor liveQuotes = new ReceiveLiveQuoteUpdatesInteractor(
+                    new PolledQuoteSubscription(), update -> { });
+            // Adds are checked against the market first, so a typo is refused rather than
+            // parked on the watchlist for ever with no price beside it.
+            TickerSearchPresenter search = new TickerSearchPresenter(watchlist);
             WatchlistController watchlistController = new WatchlistController(
-                    addToWatchlist(accountDAO), removeFromWatchlist(accountDAO), ACCOUNT_ID, refresh);
+                    addToWatchlist(accountDAO), removeFromWatchlist(accountDAO), liveQuotes,
+                    new SearchTickerInteractor(quotes, search), search, WORKER,
+                    ACCOUNT_ID, refresh);
+            // A resting order fills off an incoming price, so the quotes drawn on the
+            // watchlist are offered to the matcher on their way to the screen.
+            WatchlistInteractor watchlistInteractor = new WatchlistInteractor(priceFeed,
+                    new WatchlistPresenter(watchlist, latest -> {
+                        for (Quote quote : latest) {
+                            matchInteractor.execute(new MatchPendingOrdersRequestModel(ACCOUNT_ID, quote));
+                        }
+                    }));
 
             refreshHolder[0] = () -> WORKER.execute(() -> {
                 summaryInteractor.execute(new ViewPortfolioSummaryRequestModel(ACCOUNT_ID));
                 positionsInteractor.execute(new ViewPositionsRequestModel(ACCOUNT_ID));
                 historyInteractor.execute(new ViewOrderHistoryRequestModel(ACCOUNT_ID));
                 chartController.reload();
-
-                // A resting order fills off an incoming price, so every quote we fetch is
-                // offered to the matcher before it reaches the screen.
-                List<Quote> latest = quote(priceFeed, watchedTickers(accountDAO));
-                for (Quote quote : latest) {
-                    matchInteractor.execute(new MatchPendingOrdersRequestModel(ACCOUNT_ID, quote));
-                }
-                watchlist.setState(latest);
+                watchlistInteractor.execute(new WatchlistRequestModel(watchedTickers(accountDAO)));
             });
 
             Timer timer = new Timer(REFRESH_INTERVAL_MS, event -> refresh.run());
@@ -184,18 +200,6 @@ public class Main {
     }
 
     /** One quote per watched ticker; a symbol the feed can't price is left off the table. */
-    private static List<Quote> quote(PriceFeed priceFeed, List<String> tickers) {
-        List<Quote> quotes = new ArrayList<>();
-        for (String ticker : tickers) {
-            try {
-                quotes.add(priceFeed.getQuote(ticker));
-            } catch (RuntimeException exception) {
-                // One bad ticker shouldn't cost the others their prices, and the next tick retries.
-                LOGGER.warning(() -> "No quote for " + ticker + ": " + exception.getMessage());
-            }
-        }
-        return quotes;
-    }
 
     // The matcher reports each fill it makes; the screens are reloaded on the same tick
     // anyway, so there is nothing extra for this to do.
