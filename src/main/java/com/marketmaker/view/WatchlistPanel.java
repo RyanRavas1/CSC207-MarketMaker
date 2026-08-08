@@ -18,6 +18,7 @@ import javax.swing.JTextField;
 
 import com.marketmaker.entities.Quote;
 import com.marketmaker.interface_adapter.WatchlistController;
+import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.ViewModel;
 
 /**
@@ -45,16 +46,30 @@ public class WatchlistPanel extends TitledPanel {
     private final JTable table = Tables.create(model);
     private final JTextField symbolField = new JTextField();
     private final WatchlistController controller;
+    private String charted;
 
-    public WatchlistPanel(ViewModel<List<Quote>> viewModel, WatchlistController controller) {
+    public WatchlistPanel(ViewModel<List<Quote>> viewModel, WatchlistController controller,
+                          ChartController chartController) {
         super("Watchlist");
         this.controller = controller;
         setPreferredSize(new Dimension(300, 593));
+
+        // Picking a row charts it. Only on a real change of ticker: the table is rebuilt on
+        // every refresh, and re-charting the same symbol every ten seconds would spend the
+        // day's Alpha Vantage quota on a line that hasn't moved.
+        table.getSelectionModel().addListSelectionListener(event -> {
+            String picked = selectedTicker();
+            if (!event.getValueIsAdjusting() && picked != null && !picked.equals(charted)) {
+                charted = picked;
+                chartController.show(picked);
+            }
+        });
 
         getContent().add(buildEntryRow(), BorderLayout.NORTH);
         getContent().add(Tables.scroll(table), BorderLayout.CENTER);
         getContent().add(buildFooter(), BorderLayout.SOUTH);
 
+        viewModel.onError(this::showProblem);
         viewModel.onState(quotes -> {
             model.setRows(quotes);
             showFreshness(quotes);
@@ -75,11 +90,18 @@ public class WatchlistPanel extends TitledPanel {
 
         Instant traded = quotes.get(0).getTimestamp();
         updated.setText("As of " + Format.time(traded));
+        updated.setForeground(UiTheme.TEXT_LABEL);
         if (Duration.between(traded, Instant.now()).compareTo(STALE_AFTER) > 0) {
             paintStatus(UiTheme.TEXT_MUTED, "DELAYED");
         } else {
             paintStatus(UiTheme.GREEN, "LIVE");
         }
+    }
+
+    /** A rejected symbol or a ticker the feed had no price for, in the freshness line. */
+    private void showProblem(String problem) {
+        updated.setText(problem);
+        updated.setForeground(UiTheme.RED);
     }
 
     private void paintStatus(Color colour, String text) {

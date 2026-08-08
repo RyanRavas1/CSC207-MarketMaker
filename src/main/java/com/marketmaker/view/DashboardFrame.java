@@ -14,10 +14,14 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import com.marketmaker.entities.Quote;
+import com.marketmaker.interface_adapter.CancelOrderController;
 import com.marketmaker.interface_adapter.ChartController;
+import com.marketmaker.interface_adapter.ProfileController;
+import com.marketmaker.interface_adapter.RealizedPnLController;
 import com.marketmaker.interface_adapter.OrderTicketController;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.interface_adapter.WatchlistController;
+import com.marketmaker.use_case.user_profile.ViewProfileResponseModel;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
 import com.marketmaker.use_case.view_order_history.ViewOrderHistoryResponseModel;
 import com.marketmaker.use_case.view_portfolio_summary.ViewPortfolioSummaryResponseModel;
@@ -38,6 +42,12 @@ public class DashboardFrame extends JFrame {
     private final ViewModel<ViewCandlestickChartResponseModel> chart;
     private final ViewModel<List<Quote>> watchlist;
     private final OrderTicketPanel ticket;
+    private final OrderHistoryPanel history;
+    private final ProfileDialog profileDialog;
+    // Starts unknown rather than connected: the first refresh has not answered yet, and a
+    // green dot before anyone has spoken to Finnhub is a claim the app cannot make.
+    private final JLabel feedDot = ViewComponents.statusDot(UiTheme.TEXT_LABEL);
+    private final JLabel feedLabel = new JLabel("Connecting to Finnhub…");
     private final WatchlistController watchlistController;
     private final ChartController chartController;
     private final Runnable onRefresh;
@@ -46,7 +56,11 @@ public class DashboardFrame extends JFrame {
     public DashboardFrame(OrderTicketController ticketController,
                           WatchlistController watchlistController,
                           ChartController chartController,
+                          CancelOrderController cancelController,
+                          RealizedPnLController realizedPnLController,
+                          ProfileController profileController,
                           ViewModel<String> status,
+                          ViewModel<ViewProfileResponseModel> profile,
                           Runnable onRefresh,
                           java.util.function.Consumer<Boolean> onLiveToggle,
                           ViewModel<ViewPortfolioSummaryResponseModel> summary,
@@ -65,7 +79,13 @@ public class DashboardFrame extends JFrame {
         this.chartController = chartController;
         this.onRefresh = onRefresh;
         this.onLiveToggle = onLiveToggle;
-        this.ticket = new OrderTicketPanel(summary, status, ticketController);
+        this.ticket = new OrderTicketPanel(summary, status, ticketController, realizedPnLController);
+        this.history = new OrderHistoryPanel(orderHistory, status, cancelController);
+        this.profileDialog = new ProfileDialog(this, profile, profileController);
+        // The watchlist is the only thing that talks to the feed every tick, so its outcome
+        // is what the status light knows about.
+        watchlist.onState(quotes -> setFeedStatus(UiTheme.GREEN, "Finnhub connected", null));
+        watchlist.onError(problem -> setFeedStatus(UiTheme.AMBER, "Finnhub — no prices", problem));
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1440, 940);
@@ -87,6 +107,12 @@ public class DashboardFrame extends JFrame {
         return north;
     }
 
+    private void setFeedStatus(java.awt.Color colour, String text, String detail) {
+        feedDot.setForeground(colour);
+        feedLabel.setText(text);
+        feedLabel.setToolTipText(detail);
+    }
+
     private JComponent buildToolBar() {
         JPanel toolbar = new JPanel(new BorderLayout());
         toolbar.setBackground(UiTheme.BAR_BG);
@@ -104,9 +130,12 @@ public class DashboardFrame extends JFrame {
         sell.addActionListener(event -> ticket.chooseSide(false));
         JButton refresh = ViewComponents.button("Refresh");
         refresh.addActionListener(event -> onRefresh.run());
+        JButton profileButton = ViewComponents.button("Profile");
+        profileButton.addActionListener(event -> profileDialog.open());
         actions.add(buy);
         actions.add(sell);
         actions.add(refresh);
+        actions.add(profileButton);
 
         JCheckBox liveData = new JCheckBox("Live data", true);
         liveData.setFont(UiTheme.BASE);
@@ -117,11 +146,10 @@ public class DashboardFrame extends JFrame {
 
         JPanel status = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         status.setOpaque(false);
-        status.add(ViewComponents.statusDot(UiTheme.GREEN));
-        JLabel connected = new JLabel("Finnhub connected");
-        connected.setFont(UiTheme.BASE);
-        connected.setForeground(UiTheme.TEXT_MUTED);
-        status.add(connected);
+        status.add(feedDot);
+        feedLabel.setFont(UiTheme.BASE);
+        feedLabel.setForeground(UiTheme.TEXT_MUTED);
+        status.add(feedLabel);
 
         toolbar.add(actions, BorderLayout.WEST);
         toolbar.add(status, BorderLayout.EAST);
@@ -133,10 +161,10 @@ public class DashboardFrame extends JFrame {
         body.setBackground(UiTheme.BAR_BG);
         body.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        body.add(new WatchlistPanel(watchlist, watchlistController), BorderLayout.WEST);
+        body.add(new WatchlistPanel(watchlist, watchlistController, chartController), BorderLayout.WEST);
         body.add(new ChartPanel(chart, chartController), BorderLayout.CENTER);
         body.add(buildRightColumn(), BorderLayout.EAST);
-        body.add(new OrderHistoryPanel(orderHistory), BorderLayout.SOUTH);
+        body.add(history, BorderLayout.SOUTH);
         return body;
     }
 

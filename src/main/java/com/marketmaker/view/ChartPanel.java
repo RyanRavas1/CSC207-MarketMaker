@@ -3,7 +3,7 @@ package com.marketmaker.view;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -11,6 +11,7 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
 import com.marketmaker.entities.Candle;
@@ -22,21 +23,13 @@ import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartRespo
 /**
  * Price history for the selected ticker.
  *
- * <p>The bars are shown as a table rather than drawn candles; rendering the actual
- * candlestick chart needs custom painting and is left for the charting task. The
- * interval buttons are inert until a {@code ViewCandlestickChartInputBoundary}
- * controller exists to re-run the use case at a new {@code Resolution}.
+ * <p>Drawn as a line of closing prices rather than candlesticks: a free Alpha Vantage key
+ * only sees one bar a day, and a day's open, high and low say little that its close doesn't.
+ * The range buttons re-run the use case over a longer or shorter span.
  */
 public class ChartPanel extends TitledPanel {
 
-    private static final List<Column<Candle>> COLUMNS = List.of(
-            Column.of("Time", Instant.class, Candle::getTimestamp),
-            new Column<>("Open", Double.class, Candle::getOpen, CellStyle.NUMBER),
-            new Column<>("High", Double.class, Candle::getHigh, CellStyle.NUMBER),
-            new Column<>("Low", Double.class, Candle::getLow, CellStyle.NUMBER),
-            new Column<>("Close", Double.class, Candle::getClose, CellStyle.NUMBER));
-
-    private final ListTableModel<Candle> model = new ListTableModel<>(COLUMNS);
+    private final PriceLineChart graph = new PriceLineChart();
 
     private final JLabel ticker = ViewComponents.label(Format.ABSENT, UiTheme.TICKER, UiTheme.TEXT,
             SwingConstants.LEFT);
@@ -49,8 +42,14 @@ public class ChartPanel extends TitledPanel {
     private final JLabel low = statValue();
     private final JLabel close = statValue();
     private final JLabel volume = statValue();
-    private final JLabel source = ViewComponents.label("SAMPLE DATA — not a real price series",
-            UiTheme.BASE_BOLD, UiTheme.RED, SwingConstants.LEFT);
+    private static final String SOURCE_TEXT = "Daily closes — Alpha Vantage";
+
+    private final JLabel source = ViewComponents.label(SOURCE_TEXT,
+            UiTheme.BASE_ITALIC, UiTheme.TEXT_LABEL, SwingConstants.LEFT);
+    // Charting is not limited to what is on the watchlist: a symbol can be looked at before
+    // deciding to follow it. Enter rather than every keystroke, because each new symbol costs
+    // an API call from a small daily allowance.
+    private final JTextField symbolField = new JTextField(6);
 
     private final ChartController controller;
 
@@ -66,22 +65,41 @@ public class ChartPanel extends TitledPanel {
         JPanel area = new JPanel(new BorderLayout());
         area.setOpaque(false);
         area.setPreferredSize(new Dimension(730, 430));
-        area.add(Tables.scroll(Tables.create(model)), BorderLayout.CENTER);
+        area.add(graph, BorderLayout.CENTER);
 
         getContent().add(header, BorderLayout.NORTH);
         getContent().add(area, BorderLayout.CENTER);
 
         viewModel.onState(this::show);
+        viewModel.onError(this::showProblem);
+    }
+
+    /**
+     * Why the chart is empty, in the line that normally names the data source. A blank panel
+     * invites the user to keep clicking; a reason tells them whether to wait or retype.
+     */
+    private void showProblem(String problem) {
+        graph.setSeries(List.of(), List.of());
+        source.setText(problem);
+        source.setFont(UiTheme.BASE_BOLD);
+        source.setForeground(UiTheme.AMBER);
+        for (JLabel stat : List.of(last, change, open, high, low, close, volume)) {
+            stat.setText(Format.ABSENT);
+        }
     }
 
     private void show(ViewCandlestickChartResponseModel response) {
-        model.setRows(response.getCandles());
         ticker.setText(response.getTicker());
+        source.setText(SOURCE_TEXT);
+        source.setFont(UiTheme.BASE_ITALIC);
+        source.setForeground(UiTheme.TEXT_LABEL);
 
         List<Candle> candles = response.getCandles();
         if (candles == null || candles.isEmpty()) {
+            graph.setSeries(List.of(), List.of());
             return;
         }
+        plot(candles);
         Candle latest = candles.get(candles.size() - 1);
         double first = candles.get(0).getOpen();
         double delta = latest.getClose() - first;
@@ -98,6 +116,24 @@ public class ChartPanel extends TitledPanel {
         volume.setText(Format.volume(latest.getVolume()));
     }
 
+    private void plot(List<Candle> candles) {
+        List<Double> closes = new ArrayList<>(candles.size());
+        List<String> dates = new ArrayList<>(candles.size());
+        for (Candle candle : candles) {
+            closes.add(candle.getClose());
+            dates.add(day(candle));
+        }
+        graph.setSeries(closes, dates);
+    }
+
+    /**
+     * The bar's month and day. Daily bars all land at the same hour, so the time says nothing,
+     * and the year is the same across every range the chart offers.
+     */
+    private static String day(Candle candle) {
+        return candle.getTimestamp().toString().substring(5, 10);
+    }
+
     private JComponent buildQuoteRow() {
         JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(false);
@@ -108,9 +144,8 @@ public class ChartPanel extends TitledPanel {
         quote.add(ticker);
         quote.add(last);
         quote.add(change);
-        // Says on its face where these bars come from. Finnhub's free tier refuses
-        // /stock/candle, so until a historical provider is settled these are generated —
-        // and generated prices next to a live watchlist are indistinguishable otherwise.
+        // Says on its face where the line comes from: these are end-of-day closes, so they
+        // will not agree with the live price beside them, and that difference is not a bug.
         quote.add(source);
 
         row.add(quote, BorderLayout.WEST);
@@ -121,6 +156,14 @@ public class ChartPanel extends TitledPanel {
     private JComponent buildIntervalPicker() {
         JPanel picker = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         picker.setOpaque(false);
+        symbolField.setFont(UiTheme.BASE);
+        symbolField.setToolTipText("Type a symbol and press Enter to chart it");
+        symbolField.addActionListener(event -> {
+            controller.show(symbolField.getText());
+            symbolField.setText("");
+        });
+        picker.add(ViewComponents.caption("Symbol:"));
+        picker.add(symbolField);
         picker.add(ViewComponents.caption("Range:"));
         picker.add(intervalButton("1W", Resolution.ONE_WEEK));
         picker.add(intervalButton("1M", Resolution.ONE_MONTH));

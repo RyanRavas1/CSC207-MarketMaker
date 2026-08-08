@@ -26,6 +26,7 @@ import com.marketmaker.data_access.AlphaVantageHistoricalDataAccessObject;
 import com.marketmaker.data_access.CandleFileCache;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Quote;
+import com.marketmaker.interface_adapter.CancelOrderController;
 import com.marketmaker.interface_adapter.CandlestickChartPresenter;
 import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.OrderFeedbackPresenter;
@@ -33,6 +34,10 @@ import com.marketmaker.interface_adapter.OrderHistoryPresenter;
 import com.marketmaker.interface_adapter.OrderTicketController;
 import com.marketmaker.interface_adapter.PortfolioSummaryPresenter;
 import com.marketmaker.interface_adapter.PositionsPresenter;
+import com.marketmaker.interface_adapter.ProfileController;
+import com.marketmaker.interface_adapter.ProfilePresenter;
+import com.marketmaker.interface_adapter.RealizedPnLController;
+import com.marketmaker.interface_adapter.RealizedPnLPresenter;
 import com.marketmaker.interface_adapter.TickerSearchPresenter;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.interface_adapter.WatchlistController;
@@ -43,18 +48,26 @@ import com.marketmaker.price_feed.ReplayPriceFeed;
 import com.marketmaker.use_case.add_to_watchlist.AddToWatchlistInteractor;
 import com.marketmaker.use_case.add_to_watchlist.AddToWatchlistOutputBoundary;
 import com.marketmaker.use_case.add_to_watchlist.AddToWatchlistResponseModel;
+import com.marketmaker.use_case.calculate_realized_pnl.CalculateRealizedPnLInteractor;
+import com.marketmaker.use_case.cancel_order.CancelOrderInteractor;
+import com.marketmaker.use_case.create_account.CreateAccountInteractor;
+import com.marketmaker.use_case.create_account.CreateAccountOutputBoundary;
+import com.marketmaker.use_case.create_account.CreateAccountRequestModel;
+import com.marketmaker.use_case.create_account.CreateAccountResponseModel;
 import com.marketmaker.use_case.match_pending_orders.MatchPendingOrdersInteractor;
 import com.marketmaker.use_case.match_pending_orders.MatchPendingOrdersOutputBoundary;
 import com.marketmaker.use_case.match_pending_orders.MatchPendingOrdersRequestModel;
 import com.marketmaker.use_case.match_pending_orders.MatchPendingOrdersResponseModel;
 import com.marketmaker.use_case.place_limit_stop_order.PlaceLimitStopOrderInteractor;
 import com.marketmaker.use_case.place_order.PlaceOrderInteractor;
+import com.marketmaker.use_case.receive_live_quotes.ReceiveLiveQuoteUpdatesInteractor;
 import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistInteractor;
 import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistOutputBoundary;
 import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistResponseModel;
-import com.marketmaker.use_case.receive_live_quotes.ReceiveLiveQuoteUpdatesInteractor;
 import com.marketmaker.use_case.search_ticker.SearchTickerInteractor;
 import com.marketmaker.use_case.search_ticker.TickerDataAccessInterface;
+import com.marketmaker.use_case.user_profile.ViewProfileInteractor;
+import com.marketmaker.use_case.user_profile.ViewProfileResponseModel;
 import com.marketmaker.use_case.watchlist.WatchlistInteractor;
 import com.marketmaker.use_case.watchlist.WatchlistRequestModel;
 import com.marketmaker.use_case.view_candlestick_chart.HistoricalDataAccessInterface;
@@ -76,12 +89,14 @@ import com.marketmaker.view.DashboardFrame;
 public class Main {
     private static final String DATA_DIRECTORY = "data";
     private static final String ACCOUNT_ID = "demo";
-    private static final double STARTING_CASH = 10_000.0;
     private static final String CHART_TICKER = "AAPL";
     private static final List<String> DEFAULT_WATCHLIST = List.of("AAPL", "MSFT", "NVDA");
     // Slower than the price feed's own cache, so an idle screen re-polls rather than
     // re-serving the same quote over and over.
     private static final int REFRESH_INTERVAL_MS = 10_000;
+    // Finnhub's free tier allows 60 calls a minute and a refresh spends one per watched
+    // ticker. Aiming at 40 leaves room for the odd manual Refresh on top of the timer.
+    private static final int CALLS_PER_MINUTE = 40;
 
     private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
 
@@ -114,6 +129,7 @@ public class Main {
             ViewModel<ViewCandlestickChartResponseModel> chart = new ViewModel<>();
             ViewModel<List<Quote>> watchlist = new ViewModel<>();
             ViewModel<String> status = new ViewModel<>();
+            ViewModel<ViewProfileResponseModel> profile = new ViewModel<>();
 
             ViewPortfolioSummaryInteractor summaryInteractor = new ViewPortfolioSummaryInteractor(
                     accountDAO, quotes, new PortfolioSummaryPresenter(summary));
@@ -133,6 +149,15 @@ public class Main {
             OrderTicketController ticketController = new OrderTicketController(
                     new PlaceOrderInteractor(accountDAO, priceFeed, feedback),
                     new PlaceLimitStopOrderInteractor(accountDAO, feedback),
+                    ACCOUNT_ID);
+            CancelOrderController cancelController = new CancelOrderController(
+                    new CancelOrderInteractor(accountDAO, feedback), ACCOUNT_ID);
+            RealizedPnLPresenter realizedPnLPresenter = new RealizedPnLPresenter();
+            RealizedPnLController realizedPnLController = new RealizedPnLController(
+                    new CalculateRealizedPnLInteractor(accountDAO, realizedPnLPresenter),
+                    realizedPnLPresenter, ACCOUNT_ID);
+            ProfileController profileController = new ProfileController(
+                    new ViewProfileInteractor(accountDAO, priceFeed, new ProfilePresenter(profile)),
                     ACCOUNT_ID);
             MatchPendingOrdersInteractor matchInteractor = new MatchPendingOrdersInteractor(
                     accountDAO, silentMatcher());
@@ -165,13 +190,24 @@ public class Main {
             });
 
             Timer timer = new Timer(REFRESH_INTERVAL_MS, event -> refresh.run());
-            new DashboardFrame(ticketController, watchlistController, chartController, status,
-                    refresh, live -> toggle(timer, live), summary, positions, orderHistory,
-                    chart, watchlist).setVisible(true);
+            // A long watchlist costs more calls per tick, so it has to tick less often. The
+            // alternative is a rate limit part-way through a refresh, which shows up as some
+            // tickers holding yesterday's price with nothing on screen to say why.
+            watchlist.onState(priced -> timer.setDelay(intervalFor(priced.size())));
+            new DashboardFrame(ticketController, watchlistController, chartController,
+                    cancelController, realizedPnLController, profileController,
+                    status, profile, refresh, live -> toggle(timer, live),
+                    summary, positions, orderHistory, chart, watchlist).setVisible(true);
 
             refresh.run();
             timer.start();
         });
+    }
+
+    /** @return how long to leave between refreshes so {@code tickers} stays inside the quota */
+    static int intervalFor(int tickers) {
+        int needed = (int) Math.ceil(tickers * 60_000.0 / CALLS_PER_MINUTE);
+        return Math.max(REFRESH_INTERVAL_MS, needed);
     }
 
     private static void toggle(Timer timer, boolean live) {
@@ -182,16 +218,30 @@ public class Main {
         }
     }
 
-    /** First launch: open the paper account with its fixed starting balance and watchlist. */
+    /**
+     * First launch: open the paper account, then give it something to watch.
+     *
+     * <p>The use case decides the starting balance and refuses a second account under the
+     * same id, so this runs unconditionally and the refusal is the "already open" case.
+     */
     private static void seedAccount(AccountDAO accountDAO) {
-        if (accountDAO.get(ACCOUNT_ID) != null) {
-            return;
-        }
-        Account account = new Account(ACCOUNT_ID, STARTING_CASH);
-        for (String ticker : DEFAULT_WATCHLIST) {
-            account.getWatchlist().add(ticker);
-        }
-        accountDAO.save(account);
+        new CreateAccountInteractor(accountDAO, new CreateAccountOutputBoundary() {
+            @Override
+            public void presentSuccess(CreateAccountResponseModel response) {
+                Account account = accountDAO.get(response.getAccountId());
+                for (String ticker : DEFAULT_WATCHLIST) {
+                    account.getWatchlist().add(ticker);
+                }
+                accountDAO.save(account);
+                LOGGER.info(() -> "Opened account " + response.getAccountId()
+                        + " with " + response.getStartingBalance());
+            }
+
+            @Override
+            public void presentFailure(String errorMessage) {
+                // Already open, which is the normal case on every launch after the first.
+            }
+        }).execute(new CreateAccountRequestModel(ACCOUNT_ID));
     }
 
     private static List<String> watchedTickers(AccountDAO accountDAO) {

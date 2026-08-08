@@ -22,12 +22,14 @@ import javax.swing.event.DocumentListener;
 
 import com.marketmaker.entities.Order;
 import com.marketmaker.interface_adapter.OrderTicketController;
+import com.marketmaker.interface_adapter.RealizedPnLController;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.use_case.view_portfolio_summary.ViewPortfolioSummaryResponseModel;
 
 public class OrderTicketPanel extends TitledPanel {
 
     private final JLabel buyingPower = new JLabel(Format.ABSENT);
+    private final RealizedPnLController realizedPnL;
     private final JLabel estimatedCost = new JLabel(Format.ABSENT);
     private final JLabel hint = new JLabel(" ");
 
@@ -48,9 +50,11 @@ public class OrderTicketPanel extends TitledPanel {
     private double availableCash;
 
     public OrderTicketPanel(ViewModel<ViewPortfolioSummaryResponseModel> summary,
-                            ViewModel<String> status, OrderTicketController controller) {
+                            ViewModel<String> status, OrderTicketController controller,
+                            RealizedPnLController realizedPnL) {
         super("Order Ticket");
         this.controller = controller;
+        this.realizedPnL = realizedPnL;
         setPreferredSize(new Dimension(358, 450));
 
         getContent().add(buildForm(), BorderLayout.NORTH);
@@ -143,8 +147,18 @@ public class OrderTicketPanel extends TitledPanel {
             hint.setText("Sufficient buying power");
             hint.setForeground(UiTheme.GREEN);
         } else {
-            hint.setText(" ");
+            showRealized(price, quantity);
         }
+    }
+
+    /**
+     * A sell has no buying-power problem to warn about, so the line is spent on what the sale
+     * would actually realize against the average price paid — the number a seller is weighing.
+     */
+    private void showRealized(double price, int quantity) {
+        String realized = realizedPnL.estimate(symbolField.getText(), quantity, price);
+        hint.setText(realized == null ? " " : realized);
+        hint.setForeground(UiTheme.TEXT_MUTED);
     }
 
     private Double parse(String text) {
@@ -171,16 +185,9 @@ public class OrderTicketPanel extends TitledPanel {
         group(buy, sell);
         group(market, limit, stop);
 
-        // Time in force isn't modelled: an Order has no expiry, so every order behaves as
-        // Day. Shown disabled rather than removed, so the gap is visible instead of implied.
-        JRadioButton day = radio("Day", true);
-        JRadioButton gtc = radio("GTC", false);
-        JRadioButton ioc = radio("IOC", false);
-        group(day, gtc, ioc);
-        for (JRadioButton button : List.of(day, gtc, ioc)) {
-            button.setEnabled(false);
-            button.setToolTipText("Not modelled yet — every order is treated as Day.");
-        }
+        // No Time in Force row: an Order has no expiry, so every order behaves as Day. Three
+        // permanently greyed-out radio buttons read as a broken feature; leaving them out
+        // reads as a feature that isn't offered.
 
         form.add(labelledRow("Symbol", symbolField));
         form.add(labelledRow("Side", radioRow(buy, sell)));
@@ -188,7 +195,6 @@ public class OrderTicketPanel extends TitledPanel {
         form.add(labelledRow("Quantity", quantityField));
         form.add(labelledRow("Limit Price", limitField));
         form.add(labelledRow("Stop Price", stopField));
-        form.add(labelledRow("Time in Force", radioRow(day, gtc, ioc)));
         return form;
     }
 
