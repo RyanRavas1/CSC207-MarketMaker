@@ -92,7 +92,7 @@ public class MatchPendingOrdersInteractor implements MatchPendingOrdersInputBoun
         }
 
         order.fill(price, Instant.now());
-        account.addTrade(new Trade(UUID.randomUUID().toString(), ticker, order.getSide(),
+        account.addTrade(new Trade(UUID.randomUUID().toString(), order.getId(), ticker, order.getSide(),
                 quantity, price, Instant.now(), realizedPnL));
 
         Position resulting = findPosition(account, ticker);

@@ -112,6 +112,10 @@ public class JsonFileAccountDataAccessObject
         for (Trade trade : account.getTradeLog()) {
             JSONObject tradeJson = new JSONObject();
             tradeJson.put("id", trade.getId());
+            // Written only when known, so an older file without it stays readable.
+            if (trade.getOrderId() != null) {
+                tradeJson.put("orderId", trade.getOrderId());
+            }
             tradeJson.put("ticker", trade.getTicker());
             tradeJson.put("side", trade.getSide().name());
             tradeJson.put("quantity", trade.getQuantity());
@@ -160,7 +164,8 @@ public class JsonFileAccountDataAccessObject
         for (Object item : json.getJSONArray("tradeLog")) {
             JSONObject tradeJson = (JSONObject) item;
             Double realizedPnL = tradeJson.isNull("realizedPnL") ? null : tradeJson.getDouble("realizedPnL");
-            account.addTrade(new Trade(tradeJson.getString("id"), tradeJson.getString("ticker"),
+            account.addTrade(new Trade(tradeJson.getString("id"),
+                    tradeJson.optString("orderId", null), tradeJson.getString("ticker"),
                     Order.Side.valueOf(tradeJson.getString("side")), tradeJson.getInt("quantity"),
                     tradeJson.getDouble("price"), Instant.parse(tradeJson.getString("timestamp")), realizedPnL));
         }

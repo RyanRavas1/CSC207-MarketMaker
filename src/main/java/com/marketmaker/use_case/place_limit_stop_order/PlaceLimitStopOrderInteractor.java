@@ -40,10 +40,13 @@ public class PlaceLimitStopOrderInteractor implements PlaceLimitStopOrderInputBo
             account = new Account(request.getAccountId(), STARTING_BALANCE);
         }
 
-        // Checked against the trigger price now and it will be checked again for real at fill time.
+        // Checked against the trigger price now and again for real at fill time. Measured
+        // against buying power rather than the balance, so orders already resting count: two
+        // affordable-looking buys that together overdraw the account are refused here rather
+        // than resting for ever because the second can never be paid for.
         if (request.getSide() == Order.Side.BUY) {
             double worstCaseCost = request.getTriggerPrice() * request.getQuantity();
-            if (worstCaseCost > account.getUserBalance()) {
+            if (worstCaseCost > account.buyingPower()) {
                 presenter.presentFailure("Insufficient buying power.");
                 return;
             }

@@ -81,6 +81,32 @@ public class Account {
     }
 
     /**
+     * Cash already spoken for by buy orders that are still waiting to fill.
+     *
+     * <p>A resting buy is a promise to pay: leaving that cash on show as spendable lets the
+     * user queue several orders they cannot collectively afford, and the surplus ones then sit
+     * pending for ever because there is never enough money when their price arrives.
+     *
+     * @return the worst-case cost of every pending buy, valued at its trigger price
+     */
+    public double reservedForOpenBuys() {
+        double reserved = 0.0;
+        for (Order order : this.placedOrders) {
+            if (order.getStatus() == Order.Status.PENDING
+                    && order.getSide() == Order.Side.BUY
+                    && order.getLimitOrStopPrice() != null) {
+                reserved += order.getLimitOrStopPrice() * order.getQuantity();
+            }
+        }
+        return reserved;
+    }
+
+    /** @return cash that is free to commit, once resting buys have taken their share */
+    public double buyingPower() {
+        return Math.max(0.0, this.userBalance - reservedForOpenBuys());
+    }
+
+    /**
      * Day P/L is what the account is worth now against what it was worth at the first
      * valuation of the day, so buying a stock doesn't move it (cash simply becomes shares)
      * but a price move or a realised gain does.
