@@ -1,0 +1,65 @@
+AI USE DECLARATION
+MarketMaker, CSC207H1Y Summer 2026
+
+Our team used AI tools during this project. This file records where and how, as
+required by the project submission instructions.
+
+TOOLS USED
+
+Claude (Anthropic), through the Claude Code command line tool.
+GitHub Copilot autocomplete in IntelliJ, used by some members while writing code.
+
+WHERE AI WAS USED
+
+Code review and auditing.
+We used Claude to read through the codebase and check for problems we had missed.
+This is where it was most useful. It found that ViewComponents.button called
+setFocusable(false), which had quietly removed every button in the app from the
+keyboard tab order, so the dashboard could not be operated without a mouse. It also
+found that a merge had left the main branch unable to compile, because three files
+passed an Instant where the Candle entity expects a LocalDateTime.
+
+Accessibility work.
+Claude helped apply the accessibility fixes described in accessibility-report.md:
+binding form captions to their fields with setLabelFor, giving the tables accessible
+names, and adding keyboard mnemonics to the main actions. It also helped write the
+accessibility report itself, including checking each claim in it against the actual
+source code.
+
+Build configuration.
+Claude helped add the JaCoCo and Checkstyle plugins to pom.xml and write the
+Checkstyle rule set in config/checkstyle.xml, which encodes the conventions our team
+had already written down in docs/CODE_STYLE.md.
+
+Tests.
+Some unit tests were drafted with AI assistance, in particular
+OrderTicketControllerTest, which was written while resolving a code review comment
+about validating a whole order ticket before dispatching any of it.
+
+Documentation.
+This README and parts of our internal planning notes were drafted with AI help.
+
+Autocomplete.
+Copilot suggested individual lines and short blocks throughout development, in the
+ordinary way autocomplete does. We did not track these individually.
+
+WHERE AI WAS NOT USED
+
+The design of the program is ours. The specification, the user stories, the choice of
+domain and APIs, the entity model, the Clean Architecture layering, and the decision
+to put the price feed behind an interface with a live and a simulated implementation
+were all decided by the team before any AI tool was involved.
+
+The presentation content and the arguments we make about our own design are ours.
+
+HOW WE HANDLED IT
+
+We treated AI output as a draft to check rather than an answer to accept. That mattered
+more than we expected. At one point an AI-assisted review told us a teammate's
+accessibility report had invented classes that did not exist, when in fact the report
+was accurate and the review had been run against the wrong branch. We only caught it by
+going and reading the code ourselves. Anything an AI tool told us about our codebase, we
+verified against the source before acting on it or writing it down.
+
+Every AI-assisted change was read by a team member, compiled, and tested before being
+committed.
