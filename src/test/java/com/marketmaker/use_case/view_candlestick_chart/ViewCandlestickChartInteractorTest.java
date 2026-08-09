@@ -3,14 +3,14 @@ package com.marketmaker.use_case.view_candlestick_chart;
 import com.marketmaker.entities.Candle;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ViewCandlestickChartInteractorTest {
+class ViewCandlestickChartInteractorTest {
 
     private static class FakePresenter implements ViewCandlestickChartOutputBoundary {
         ViewCandlestickChartResponseModel successResponse;
@@ -36,7 +36,7 @@ public class ViewCandlestickChartInteractorTest {
             if (!ticker.equals("AAPL")) {
                 return List.of();
             }
-            return List.of(new Candle("AAPL", "D", 230.0, 235.0, 228.0, 232.5, 1000.0, Instant.EPOCH));
+            return List.of(new Candle("AAPL", "D", 230.0, 235.0, 228.0, 232.5, 1000.0, LocalDateTime.MIN));
         }
     }
 
@@ -49,8 +49,9 @@ public class ViewCandlestickChartInteractorTest {
         interactor.execute(new ViewCandlestickChartRequestModel("aapl", Resolution.ONE_DAY));
 
         assertNull(presenter.failureMessage);
-        assertEquals(1, presenter.successResponse.getCandles().size());
+        assertEquals("AAPL", presenter.successResponse.getTicker());
         assertEquals(Resolution.ONE_DAY, presenter.successResponse.getResolution());
+        assertEquals(1, presenter.successResponse.getCandles().size());
     }
 
     @Test
@@ -64,6 +65,9 @@ public class ViewCandlestickChartInteractorTest {
 
         interactor.execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.FIVE_MINUTE));
         assertEquals(Resolution.FIVE_MINUTE, dataAccess.requestedResolution);
+
+        interactor.execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.ONE_DAY));
+        assertEquals(Resolution.ONE_DAY, dataAccess.requestedResolution);
     }
 
     @Test
@@ -75,5 +79,23 @@ public class ViewCandlestickChartInteractorTest {
         interactor.execute(new ViewCandlestickChartRequestModel("ZZZZ", Resolution.ONE_DAY));
 
         assertTrue(presenter.failureMessage.contains("No historical data"));
+    }
+
+    @Test
+    void rejectsNullOrBlankTickerAndNullCandleResponse() {
+        FakePresenter blank = new FakePresenter();
+        ViewCandlestickChartInteractor interactor = new ViewCandlestickChartInteractor((ticker, resolution) -> List.of(), blank);
+
+        interactor.execute(new ViewCandlestickChartRequestModel(" ", Resolution.ONE_DAY));
+        assertEquals("Select a ticker to chart.", blank.failureMessage);
+
+        blank.failureMessage = null;
+        interactor.execute(new ViewCandlestickChartRequestModel(null, Resolution.ONE_DAY));
+        assertEquals("Select a ticker to chart.", blank.failureMessage);
+
+        FakePresenter nullResponse = new FakePresenter();
+        new ViewCandlestickChartInteractor((ticker, resolution) -> null, nullResponse)
+                .execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.ONE_DAY));
+        assertTrue(nullResponse.failureMessage.contains("No historical data"));
     }
 }

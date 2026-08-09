@@ -12,7 +12,7 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ViewPortfolioSummaryInteractorTest {
+class ViewPortfolioSummaryInteractorTest {
 
     private static class FakePresenter implements ViewPortfolioSummaryOutputBoundary {
         ViewPortfolioSummaryResponseModel successResponse;
@@ -46,13 +46,33 @@ public class ViewPortfolioSummaryInteractorTest {
         ViewPortfolioSummaryInteractor interactor =
                 new ViewPortfolioSummaryInteractor(accountDAO, new FakeQuoteDataAccess(), presenter);
 
-        interactor.execute(new ViewPortfolioSummaryRequestModel("wayne"));
+        ViewPortfolioSummaryRequestModel req = new ViewPortfolioSummaryRequestModel("wayne");
+        assertEquals("wayne", req.getAccountId());
+
+        interactor.execute(req);
 
         ViewPortfolioSummaryResponseModel response = presenter.successResponse;
         assertEquals(90_000.0, response.getCash());
         assertEquals(90_000.0, response.getBuyingPower());
         assertEquals(92_500.0, response.getTotalEquity());
         assertEquals(500.0, response.getDailyPnL());
+    }
+
+    @Test
+    void fallsBackToAveragePriceWhenQuoteIsNull() {
+        InMemoryAccountDAO accountDAO = new InMemoryAccountDAO();
+        Account account = new Account("wayne", 90_000.0);
+        account.addPosition(new Position("AAPL", 10, 200.0));
+        accountDAO.save(account);
+        FakePresenter presenter = new FakePresenter();
+        ViewPortfolioSummaryInteractor interactor =
+                new ViewPortfolioSummaryInteractor(accountDAO, ticker -> null, presenter);
+
+        interactor.execute(new ViewPortfolioSummaryRequestModel("wayne"));
+
+        ViewPortfolioSummaryResponseModel response = presenter.successResponse;
+        assertEquals(92_000.0, response.getTotalEquity());
+        assertEquals(0.0, response.getDailyPnL());
     }
 
     @Test
