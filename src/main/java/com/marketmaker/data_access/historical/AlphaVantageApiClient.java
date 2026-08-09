@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -37,27 +38,33 @@ public class AlphaVantageApiClient {
     private static final DateTimeFormatter MONTH_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM");
 
-    // Matches one Alpha Vantage intraday entry,
-    // Example entry:
-    // "2024-03-01 14:35:00": {"1. open":"180.50","2. high":"180.63","3. low":"180.45", "4. close":"180.58","5. volume":"15000"}
+    // Captures one intraday entry's timestamp plus its raw field block; the individual
+    // OHLCV fields are then pulled out of that block by FIELD_PATTERN below. Splitting
+    // the matching into two smaller patterns keeps each one's complexity manageable.
     private static final Pattern ENTRY_PATTERN = Pattern.compile(
-            "\"(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})\"\\s*:\\s*\\{"
-                    + "\\s*\"1\\. open\"\\s*:\\s*\"([\\d.]+)\"\\s*,\\s*"
-                    + "\"2\\. high\"\\s*:\\s*\"([\\d.]+)\"\\s*,\\s*"
-                    + "\"3\\. low\"\\s*:\\s*\"([\\d.]+)\"\\s*,\\s*"
-                    + "\"4\\. close\"\\s*:\\s*\"([\\d.]+)\"\\s*,\\s*"
-                    + "\"5\\. volume\"\\s*:\\s*\"(\\d+)\"\\s*\\}"
+            "\"(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})\"\\s*:\\s*\\{([^}]*)\\}"
+    );
+
+    // Matches a single "N. fieldName":"value" pair within an entry's field block.
+    private static final Pattern FIELD_PATTERN = Pattern.compile(
+            "\"\\d\\.\\s*(open|high|low|close|volume)\"\\s*:\\s*\"([\\d.]+)\""
     );
 
     private final HttpClient httpClient;
     private final String apiKey;
+    private final String cacheDir;
 
     public AlphaVantageApiClient(String apiKey) {
+        this(apiKey, HttpClient.newHttpClient(), CACHE_DIR);
+    }
+
+    AlphaVantageApiClient(String apiKey, HttpClient httpClient, String cacheDir) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalArgumentException("apiKey must not be null or blank");
         }
-        this.httpClient = HttpClient.newHttpClient();
+        this.httpClient = httpClient;
         this.apiKey = apiKey;
+        this.cacheDir = cacheDir != null ? cacheDir : CACHE_DIR;
     }
 
     /**
@@ -155,18 +162,19 @@ public class AlphaVantageApiClient {
 
     private TreeMap<LocalDateTime, Candle> parseCandles(String json, String ticker, Interval interval) {
         TreeMap<LocalDateTime, Candle> candles = new TreeMap<>();
-        Matcher matcher = ENTRY_PATTERN.matcher(json);
+        Matcher entryMatcher = ENTRY_PATTERN.matcher(json);
 
-        while (matcher.find()) {
-            LocalDateTime timestamp = LocalDateTime.parse(matcher.group(1), AV_TIMESTAMP_FORMAT);
+        while (entryMatcher.find()) {
+            LocalDateTime timestamp = LocalDateTime.parse(entryMatcher.group(1), AV_TIMESTAMP_FORMAT);
+            Map<String, Double> fields = extractFields(entryMatcher.group(2));
             Candle candle = new Candle(
                     ticker,
                     interval.apiValue(),
-                    Double.parseDouble(matcher.group(2)),
-                    Double.parseDouble(matcher.group(3)),
-                    Double.parseDouble(matcher.group(4)),
-                    Double.parseDouble(matcher.group(5)),
-                    Double.parseDouble(matcher.group(6)),
+                    fields.getOrDefault("open", 0.0),
+                    fields.getOrDefault("high", 0.0),
+                    fields.getOrDefault("low", 0.0),
+                    fields.getOrDefault("close", 0.0),
+                    fields.getOrDefault("volume", 0.0),
                     timestamp
             );
             candles.put(timestamp, candle);
@@ -175,7 +183,16 @@ public class AlphaVantageApiClient {
         return candles;
     }
 
+    private Map<String, Double> extractFields(String entryBody) {
+        Map<String, Double> fields = new HashMap<>();
+        Matcher fieldMatcher = FIELD_PATTERN.matcher(entryBody);
+        while (fieldMatcher.find()) {
+            fields.put(fieldMatcher.group(1), Double.parseDouble(fieldMatcher.group(2)));
+        }
+        return fields;
+    }
+
     private Path cacheFilePath(String ticker, String month, Interval interval) {
-        return Paths.get(CACHE_DIR, ticker + "_" + interval.apiValue() + "_" + month + ".json");
+        return Paths.get(cacheDir, ticker + "_" + interval.apiValue() + "_" + month + ".json");
     }
 }

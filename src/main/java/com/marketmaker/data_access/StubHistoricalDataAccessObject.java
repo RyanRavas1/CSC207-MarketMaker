@@ -2,6 +2,8 @@ package com.marketmaker.data_access;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -37,7 +39,8 @@ public class StubHistoricalDataAccessObject implements HistoricalDataAccessInter
             double volume = 1000 + Math.random() * 500;
             Instant timestamp = now.minus(step.multipliedBy(i));
 
-            candles.add(new Candle(ticker, resolutionLabel(resolution), open, high, low, close, volume, timestamp));
+            candles.add(new Candle(ticker, resolutionLabel(resolution), open, high, low, close, volume,
+                    LocalDateTime.ofInstant(timestamp, ZoneOffset.UTC)));
             price = close;
         }
 

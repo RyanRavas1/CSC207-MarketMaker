@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CalculateRealizedPnLInteractorTest {
+class CalculateRealizedPnLInteractorTest {
 
     private static class FakePresenter implements CalculateRealizedPnLOutputBoundary {
         CalculateRealizedPnLResponseModel successResponse;
@@ -35,9 +35,17 @@ public class CalculateRealizedPnLInteractorTest {
         FakePresenter presenter = new FakePresenter();
         CalculateRealizedPnLInteractor interactor = new CalculateRealizedPnLInteractor(accountDAO, presenter);
 
-        interactor.execute(new CalculateRealizedPnLRequestModel("wayne", "AAPL", 4, 250.0));
+        CalculateRealizedPnLRequestModel req = new CalculateRealizedPnLRequestModel("wayne", "AAPL", 4, 250.0);
+        assertEquals("wayne", req.getAccountId());
+        assertEquals("AAPL", req.getTicker());
+        assertEquals(4, req.getQuantitySold());
+        assertEquals(250.0, req.getSalePrice());
+
+        interactor.execute(req);
 
         assertNull(presenter.failureMessage);
+        assertEquals("AAPL", presenter.successResponse.getTicker());
+        assertEquals(4, presenter.successResponse.getQuantitySold());
         assertEquals(200.0, presenter.successResponse.getRealizedPnL());
     }
 
@@ -65,5 +73,18 @@ public class CalculateRealizedPnLInteractorTest {
         interactor.execute(new CalculateRealizedPnLRequestModel("wayne", "AAPL", 1, 250.0));
 
         assertTrue(presenter.failureMessage.contains("No position"));
+    }
+
+    @Test
+    void rejectsMissingAccountAndNonPositiveQuantity() {
+        InMemoryAccountDAO dao = new InMemoryAccountDAO();
+        FakePresenter missing = new FakePresenter();
+        new CalculateRealizedPnLInteractor(dao, missing).execute(new CalculateRealizedPnLRequestModel("ghost", "AAPL", 1, 1));
+        assertEquals("Account not found.", missing.failureMessage);
+
+        Account account = new Account("wayne", 0); account.addPosition(new Position("AAPL", 1, 1)); dao.save(account);
+        FakePresenter invalid = new FakePresenter();
+        new CalculateRealizedPnLInteractor(dao, invalid).execute(new CalculateRealizedPnLRequestModel("wayne", "AAPL", 0, 1));
+        assertEquals("Quantity sold must be positive.", invalid.failureMessage);
     }
 }

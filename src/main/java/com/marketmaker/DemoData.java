@@ -1,6 +1,8 @@
 package com.marketmaker;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -94,6 +96,7 @@ final class DemoData {
 
     private static Candle bar(double open, double high, double low, double close,
                               double volume, int secondsIn) {
-        return new Candle("AAPL", "1", open, high, low, close, volume, OPEN_BELL.plusSeconds(secondsIn));
+        return new Candle("AAPL", "1", open, high, low, close, volume,
+                LocalDateTime.ofInstant(OPEN_BELL.plusSeconds(secondsIn), ZoneOffset.UTC));
     }
 }
