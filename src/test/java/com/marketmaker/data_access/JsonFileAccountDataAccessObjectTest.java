@@ -27,7 +27,7 @@ public class JsonFileAccountDataAccessObjectTest {
         account.addOrder(marketOrder);
         Order pendingLimitOrder = new Order("o2", "MSFT", Order.Side.BUY, Order.Type.LIMIT, 5, 400.0, Instant.EPOCH);
         account.addOrder(pendingLimitOrder);
-        account.addTrade(new Trade("t1", "AAPL", Order.Side.BUY, 10, 232.50, Instant.EPOCH, null));
+        account.addTrade(new Trade("t1", "o1", "AAPL", Order.Side.BUY, 10, 232.50, Instant.EPOCH, null));
         account.getWatchlist().add("TSLA");
 
         dataAccess.save(account);

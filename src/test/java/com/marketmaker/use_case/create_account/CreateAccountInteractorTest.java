@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CreateAccountInteractorTest {
 
-    private static class FakePresenter implements CreateAccountOutputBoundary {
+    private static final class FakePresenter implements CreateAccountOutputBoundary {
         CreateAccountResponseModel successResponse;
         String failureMessage;
 

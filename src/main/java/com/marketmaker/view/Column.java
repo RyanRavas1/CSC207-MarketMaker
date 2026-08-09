@@ -10,7 +10,11 @@ import java.util.function.Function;
  * sorts on what this returns, so formatting here would sort "9.00" above "10.00".
  * {@link StyledCellRenderer} does the formatting at paint time instead.
  *
- * @param <T> the row type this column reads from
+ * @param <T>   the row type this column reads from
+ * @param name  the column heading
+ * @param type  the class of the raw value, used by the sorter
+ * @param value reads the raw value out of a row
+ * @param style how {@link StyledCellRenderer} should paint the value
  */
 public record Column<T>(String name, Class<?> type, Function<T, Object> value, CellStyle style) {
 

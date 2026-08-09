@@ -141,7 +141,8 @@ public class AlphaVantageApiClient {
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
             if (response.statusCode() != 200) {
-                throw new StockDataException("HTTP " + response.statusCode() + " from Alpha Vantage for ticker " + ticker);
+                throw new StockDataException(
+                        "HTTP " + response.statusCode() + " from Alpha Vantage for ticker " + ticker);
             }
             return response.body();
         } catch (IOException | InterruptedException e) {

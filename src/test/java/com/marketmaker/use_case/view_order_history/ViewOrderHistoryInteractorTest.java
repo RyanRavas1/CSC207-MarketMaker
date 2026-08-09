@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ViewOrderHistoryInteractorTest {
 
-    private static class FakePresenter implements ViewOrderHistoryOutputBoundary {
+    private static final class FakePresenter implements ViewOrderHistoryOutputBoundary {
         ViewOrderHistoryResponseModel successResponse;
         String failureMessage;
 
@@ -36,7 +36,7 @@ class ViewOrderHistoryInteractorTest {
         Order order = new Order("o1", "AAPL", Order.Side.BUY, Order.Type.MARKET, 10, null, Instant.EPOCH);
         order.fill(232.50, Instant.EPOCH);
         account.addOrder(order);
-        account.addTrade(new Trade("t1", "AAPL", Order.Side.BUY, 10, 232.50, Instant.EPOCH, null));
+        account.addTrade(new Trade("t1", "o1", "AAPL", Order.Side.BUY, 10, 232.50, Instant.EPOCH, null));
         accountDAO.save(account);
         FakePresenter presenter = new FakePresenter();
         ViewOrderHistoryInteractor interactor = new ViewOrderHistoryInteractor(accountDAO, presenter);

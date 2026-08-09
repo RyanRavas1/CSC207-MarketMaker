@@ -76,7 +76,7 @@ public class PlaceOrderInteractor implements PlaceOrderInputBoundary {
                 Order.Type.MARKET, quantity, null, Instant.now());
         order.fill(price, Instant.now());
         account.addOrder(order);
-        account.addTrade(new Trade(UUID.randomUUID().toString(), ticker, request.getSide(),
+        account.addTrade(new Trade(UUID.randomUUID().toString(), order.getId(), ticker, request.getSide(),
                 quantity, price, Instant.now(), realizedPnL));
 
         accountDAO.save(account);

@@ -4,6 +4,9 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Insets;
+import java.awt.Color;
+import java.awt.event.KeyEvent;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
@@ -11,9 +14,12 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTable;
 import javax.swing.JTextField;
 
 import com.marketmaker.entities.Quote;
+import com.marketmaker.interface_adapter.WatchlistController;
+import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.ViewModel;
 
 /**
@@ -26,6 +32,9 @@ import com.marketmaker.interface_adapter.ViewModel;
  */
 public class WatchlistPanel extends TitledPanel {
 
+    // A quote older than this is the last trade before the close, not a live price.
+    private static final Duration STALE_AFTER = Duration.ofMinutes(2);
+
     private static final List<Column<Quote>> COLUMNS = List.of(
             Column.of("Symbol", String.class, Quote::getTicker),
             new Column<>("Last", Double.class, Quote::getPrice, CellStyle.NUMBER),
@@ -33,19 +42,79 @@ public class WatchlistPanel extends TitledPanel {
 
     private final ListTableModel<Quote> model = new ListTableModel<>(COLUMNS);
     private final JLabel updated = new JLabel();
+    private final JLabel live = new JLabel("NO DATA");
+    private final JLabel dot = ViewComponents.statusDot(UiTheme.TEXT_MUTED);
+    private final JTable table = Tables.create(model, "Watchlist quotes");
+    private final JTextField symbolField = new JTextField();
+    private final WatchlistController controller;
+    private String charted;
 
-    public WatchlistPanel(ViewModel<List<Quote>> viewModel) {
+    public WatchlistPanel(ViewModel<List<Quote>> viewModel, WatchlistController controller,
+                          ChartController chartController) {
         super("Watchlist");
+        this.controller = controller;
         setPreferredSize(new Dimension(300, 593));
 
+        // Picking a row charts it. Only on a real change of ticker: the table is rebuilt on
+        // every refresh, and re-charting the same symbol every ten seconds would spend the
+        // day's Alpha Vantage quota on a line that hasn't moved.
+        table.getSelectionModel().addListSelectionListener(event -> {
+            String picked = selectedTicker();
+            if (!event.getValueIsAdjusting() && picked != null && !picked.equals(charted)) {
+                charted = picked;
+                chartController.show(picked);
+            }
+        });
+
         getContent().add(buildEntryRow(), BorderLayout.NORTH);
-        getContent().add(Tables.scroll(Tables.create(model)), BorderLayout.CENTER);
+        getContent().add(Tables.scroll(table), BorderLayout.CENTER);
         getContent().add(buildFooter(), BorderLayout.SOUTH);
 
+        viewModel.onError(this::showProblem);
         viewModel.onState(quotes -> {
             model.setRows(quotes);
-            updated.setText("Updated " + Format.time(Instant.now()));
+            showFreshness(quotes);
         });
+    }
+
+    /**
+     * The status line reports the market's own timestamp, not the moment we asked. After the
+     * close those are hours apart, and a green LIVE over a stale closing price is a lie the
+     * user cannot see through.
+     */
+    private void showFreshness(List<Quote> quotes) {
+        if (quotes == null || quotes.isEmpty()) {
+            paintStatus(UiTheme.TEXT_MUTED, "NO DATA");
+            updated.setText("");
+            return;
+        }
+
+        Instant traded = quotes.get(0).getTimestamp();
+        updated.setText("As of " + Format.time(traded));
+        updated.setForeground(UiTheme.TEXT_LABEL);
+        if (Duration.between(traded, Instant.now()).compareTo(STALE_AFTER) > 0) {
+            paintStatus(UiTheme.TEXT_MUTED, "DELAYED");
+        } else {
+            paintStatus(UiTheme.GREEN, "LIVE");
+        }
+    }
+
+    /** A rejected symbol or a ticker the feed had no price for, in the freshness line. */
+    private void showProblem(String problem) {
+        updated.setText(problem);
+        updated.setForeground(UiTheme.RED);
+    }
+
+    private void paintStatus(Color colour, String text) {
+        live.setText(text);
+        live.setForeground(colour);
+        dot.setForeground(colour);
+    }
+
+    /** The ticker on the highlighted row, or null when nothing is selected. */
+    private String selectedTicker() {
+        int row = table.getSelectedRow();
+        return row < 0 ? null : model.getRow(table.convertRowIndexToModel(row)).getTicker();
     }
 
     private JPanel buildEntryRow() {
@@ -53,13 +122,31 @@ public class WatchlistPanel extends TitledPanel {
         row.setOpaque(false);
         row.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
 
-        JTextField symbolField = new JTextField();
         symbolField.setFont(UiTheme.BASE);
+
+        JButton add = smallButton("Add");
+        add.setMnemonic(KeyEvent.VK_A);
+        add.setToolTipText("Add the typed symbol to the watchlist (Alt+A)");
+        add.addActionListener(event -> {
+            controller.add(symbolField.getText());
+            symbolField.setText("");
+        });
+
+        // Removing goes by the typed symbol when there is one, so a ticker that never got a
+        // row — because it could not be quoted — can still be taken off the list.
+        JButton remove = smallButton("Remove");
+        remove.setMnemonic(KeyEvent.VK_M);
+        remove.setToolTipText("Stop watching the selected symbol (Alt+M)");
+        remove.addActionListener(event -> {
+            String typed = symbolField.getText().trim();
+            controller.remove(typed.isEmpty() ? selectedTicker() : typed);
+            symbolField.setText("");
+        });
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         buttons.setOpaque(false);
-        buttons.add(smallButton("Add"));
-        buttons.add(smallButton("Remove"));
+        buttons.add(add);
+        buttons.add(remove);
 
         row.add(symbolField, BorderLayout.CENTER);
         row.add(buttons, BorderLayout.EAST);
@@ -80,10 +167,9 @@ public class WatchlistPanel extends TitledPanel {
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         left.setOpaque(false);
-        left.add(ViewComponents.statusDot(UiTheme.GREEN));
-        JLabel live = new JLabel("LIVE");
+        left.add(dot);
         live.setFont(UiTheme.BASE_BOLD);
-        live.setForeground(UiTheme.GREEN);
+        live.setForeground(UiTheme.TEXT_MUTED);
         left.add(live);
 
         updated.setFont(UiTheme.BASE);

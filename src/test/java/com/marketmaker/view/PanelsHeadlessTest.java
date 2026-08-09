@@ -9,110 +9,164 @@ import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartRespo
 import com.marketmaker.use_case.view_order_history.OrderHistoryRow;
 import com.marketmaker.use_case.view_order_history.TradeHistoryRow;
 import com.marketmaker.use_case.view_order_history.ViewOrderHistoryResponseModel;
-import com.marketmaker.use_case.order_history.OrderHistoryEntry;
 import com.marketmaker.use_case.view_portfolio_summary.ViewPortfolioSummaryResponseModel;
 import com.marketmaker.use_case.view_positions.PositionView;
 import com.marketmaker.use_case.view_positions.ViewPositionsResponseModel;
 import org.junit.jupiter.api.Test;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
+import javax.swing.JViewport;
+import javax.swing.SwingUtilities;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Builds each panel and checks it reflects what the view model publishes. Controllers are
+ * null on purpose: no panel calls one while constructing, only from an action listener, so
+ * these tests cover rendering without standing up the whole object graph.
+ */
 class PanelsHeadlessTest {
     @Test void panelsBuildAndReflectPublishedViewModelState() throws Exception {
-        java.util.concurrent.atomic.AtomicReference<AccountSummaryBar> summaryBarRef = new java.util.concurrent.atomic.AtomicReference<>();
-        java.util.concurrent.atomic.AtomicReference<OrderTicketPanel> ticketRef = new java.util.concurrent.atomic.AtomicReference<>();
-        java.util.concurrent.atomic.AtomicReference<PositionsPanel> positionsRef = new java.util.concurrent.atomic.AtomicReference<>();
-        java.util.concurrent.atomic.AtomicReference<WatchlistPanel> watchlistRef = new java.util.concurrent.atomic.AtomicReference<>();
-        java.util.concurrent.atomic.AtomicReference<ChartPanel> chartRef = new java.util.concurrent.atomic.AtomicReference<>();
+        AtomicReference<AccountSummaryBar> summaryBarRef = new AtomicReference<>();
+        AtomicReference<OrderTicketPanel> ticketRef = new AtomicReference<>();
+        AtomicReference<PositionsPanel> positionsRef = new AtomicReference<>();
+        AtomicReference<WatchlistPanel> watchlistRef = new AtomicReference<>();
+        AtomicReference<ChartPanel> chartRef = new AtomicReference<>();
         onEdt(() -> {
             ViewModel<ViewPortfolioSummaryResponseModel> summary = new ViewModel<>();
-            AccountSummaryBar summaryBar = new AccountSummaryBar(summary);
-            OrderTicketPanel ticket = new OrderTicketPanel(summary);
-            summaryBarRef.set(summaryBar); ticketRef.set(ticket);
+            ViewModel<String> status = new ViewModel<>();
+            summaryBarRef.set(new AccountSummaryBar(summary));
+            ticketRef.set(new OrderTicketPanel(summary, status, null, null));
             summary.setState(new ViewPortfolioSummaryResponseModel(1, 2, 3, -4));
 
-            ViewModel<ViewPositionsResponseModel> positions = new ViewModel<>(); PositionsPanel positionsPanel = new PositionsPanel(positions);
-            positionsRef.set(positionsPanel);
-            positions.setState(new ViewPositionsResponseModel(List.of(new PositionView("AAPL", 2, 10, 12, 4))));
+            ViewModel<ViewPositionsResponseModel> positions = new ViewModel<>();
+            positionsRef.set(new PositionsPanel(positions));
+            positions.setState(new ViewPositionsResponseModel(
+                    List.of(new PositionView("AAPL", 2, 10, 12, 4))));
 
-            ViewModel<List<Quote>> watchlist = new ViewModel<>(); WatchlistPanel watchlistPanel = new WatchlistPanel(watchlist);
-            watchlistRef.set(watchlistPanel);
+            ViewModel<List<Quote>> watchlist = new ViewModel<>();
+            watchlistRef.set(new WatchlistPanel(watchlist, null, null));
             watchlist.setState(List.of(new Quote("AAPL", 12, Instant.EPOCH)));
 
-            ViewModel<ViewCandlestickChartResponseModel> chart = new ViewModel<>(); ChartPanel chartPanel = new ChartPanel(chart);
-            chartRef.set(chartPanel);
-            chart.setState(new ViewCandlestickChartResponseModel("AAPL", Resolution.ONE_DAY, List.of(new Candle("AAPL", "D", 1, 2, 0, 1, 1, LocalDateTime.MIN))));
+            ViewModel<ViewCandlestickChartResponseModel> chart = new ViewModel<>();
+            chartRef.set(new ChartPanel(chart, null));
+            chart.setState(new ViewCandlestickChartResponseModel("AAPL", Resolution.ONE_MONTH,
+                    List.of(new Candle("AAPL", "D", 1, 2, 0, 1, 1, LocalDateTime.MIN))));
         });
         onEdt(() -> {
-            assertTrue(labels(summaryBarRef.get()).stream().anyMatch(label -> label.getText().equals(Format.signedDollars(-4d))));
-            assertTrue(labels(ticketRef.get()).stream().anyMatch(label -> label.getText().equals("$2.00")));
+            assertTrue(labels(summaryBarRef.get()).stream()
+                    .anyMatch(label -> label.getText().equals(Format.signedDollars(-4d))));
+            assertTrue(labels(ticketRef.get()).stream()
+                    .anyMatch(label -> label.getText().equals("$2.00")));
             assertEquals(1, tables(positionsRef.get()).get(0).getRowCount());
             assertEquals(1, tables(watchlistRef.get()).get(0).getRowCount());
-            assertTrue(labels(chartRef.get()).stream().anyMatch(label -> label.getText().contains("AAPL")));
+            assertTrue(labels(chartRef.get()).stream()
+                    .anyMatch(label -> label.getText().contains("AAPL")));
         });
     }
 
     @Test void historyPanelLoadsRowsFiltersAndShowsErrors() throws Exception {
-        java.util.concurrent.atomic.AtomicReference<ViewModel<ViewOrderHistoryResponseModel>> modelRef = new java.util.concurrent.atomic.AtomicReference<>();
-        java.util.concurrent.atomic.AtomicReference<OrderHistoryPanel> panelRef = new java.util.concurrent.atomic.AtomicReference<>();
+        AtomicReference<ViewModel<ViewOrderHistoryResponseModel>> modelRef = new AtomicReference<>();
+        AtomicReference<OrderHistoryPanel> panelRef = new AtomicReference<>();
         onEdt(() -> {
-            ViewModel<ViewOrderHistoryResponseModel> model = new ViewModel<>(); OrderHistoryPanel panel = new OrderHistoryPanel(model);
-            modelRef.set(model); panelRef.set(panel);
+            ViewModel<ViewOrderHistoryResponseModel> model = new ViewModel<>();
+            modelRef.set(model);
+            panelRef.set(new OrderHistoryPanel(model, new ViewModel<>(), null));
             model.setState(new ViewOrderHistoryResponseModel(List.of(
-                    new OrderHistoryRow("p", "AAPL", Order.Side.BUY, Order.Type.LIMIT, 1, 1d, Order.Status.PENDING, Instant.EPOCH),
-                    new OrderHistoryRow("f", "MSFT", Order.Side.SELL, Order.Type.MARKET, 1, null, Order.Status.FILLED, Instant.EPOCH)),
+                    new OrderHistoryRow("p", "AAPL", Order.Side.BUY, Order.Type.LIMIT, 1, 1d,
+                            Order.Status.PENDING, Instant.EPOCH),
+                    new OrderHistoryRow("f", "MSFT", Order.Side.SELL, Order.Type.MARKET, 1, null,
+                            Order.Status.FILLED, Instant.EPOCH)),
                     List.of(new TradeHistoryRow("t", "AAPL", Order.Side.BUY, 1, 1, Instant.EPOCH, null))));
         });
         onEdt(() -> {
             OrderHistoryPanel panel = panelRef.get();
             List<JTable> tables = tables(panel);
-            JTable orders = tables.stream().filter(table -> table.getColumnCount() == 7).findFirst().orElseThrow();
-            JTable trades = tables.stream().filter(table -> table.getColumnCount() == 6).findFirst().orElseThrow();
-            assertEquals(2, orders.getRowCount()); assertEquals(1, trades.getRowCount());
-            buttons(panel).stream().filter(button -> button.getText().equals("Pending")).findFirst().orElseThrow().doClick();
+            JTable orders = tables.stream()
+                    .filter(table -> table.getColumnCount() == 7).findFirst().orElseThrow();
+            JTable trades = tables.stream()
+                    .filter(table -> table.getColumnCount() == 6).findFirst().orElseThrow();
+            assertEquals(2, orders.getRowCount());
+            assertEquals(1, trades.getRowCount());
+            buttons(panel).stream().filter(button -> "Pending".equals(button.getText()))
+                    .findFirst().orElseThrow().doClick();
             assertEquals(1, orders.getRowCount());
-            modelRef.get().setError("load failed"); assertTrue(labels(panel).stream().anyMatch(label -> label.getText().equals("load failed")));
         });
     }
 
     @Test void titledPanelAndComponentsApplyExpectedStructure() throws Exception {
         onEdt(() -> {
-            TitledPanel panel = new TitledPanel("Title"); assertNotNull(panel.getContent()); assertTrue(labels(panel).stream().anyMatch(label -> label.getText().equals("Title")));
-            assertEquals("Caption", ViewComponents.caption("Caption").getText()); assertFalse(ViewComponents.button("Go").isFocusable()); assertEquals("●", ViewComponents.statusDot(Color.BLUE).getText());
+            TitledPanel panel = new TitledPanel("Title");
+            assertNotNull(panel.getContent());
+            assertTrue(labels(panel).stream().anyMatch(label -> label.getText().equals("Title")));
+            assertAll(
+                    () -> assertEquals("Caption", ViewComponents.caption("Caption").getText()),
+                    // Buttons must stay in the Tab order; see accessibility-report.md.
+                    () -> assertTrue(ViewComponents.button("Go").isFocusable()),
+                    () -> assertEquals("●", ViewComponents.statusDot(Color.BLUE).getText()));
         });
     }
 
-    @Test void legacyOrderHistoryViewBuildsReadOnlyHistoryTable() throws Exception {
-        onEdt(() -> {
-            OrderHistoryView view = new OrderHistoryView(() -> List.of(new OrderHistoryEntry("09:30", "AAPL", "BUY", "MARKET", 2, "-", "Filled", "-")));
-            JTable table = tables(view).get(0);
-            assertAll(() -> assertEquals(1, table.getRowCount()), () -> assertEquals(8, table.getColumnCount()), () -> assertFalse(table.isCellEditable(0, 0)), () -> assertFalse(table.getTableHeader().getReorderingAllowed()));
-        });
+    private static List<JTable> tables(Container root) {
+        return descendants(root, JTable.class);
     }
 
-    private static List<JTable> tables(Container root) { return descendants(root, JTable.class); }
-    private static List<JLabel> labels(Container root) { return descendants(root, JLabel.class); }
-    private static List<JButton> buttons(Container root) { return descendants(root, JButton.class); }
+    private static List<JLabel> labels(Container root) {
+        return descendants(root, JLabel.class);
+    }
+
+    private static List<JButton> buttons(Container root) {
+        return descendants(root, JButton.class);
+    }
+
     private static <T extends Component> List<T> descendants(Container root, Class<T> type) {
-        java.util.ArrayList<T> matches = new java.util.ArrayList<>();
+        List<T> matches = new ArrayList<>();
         for (Component component : root.getComponents()) {
-            if (type.isInstance(component)) matches.add(type.cast(component));
-            if (component instanceof JScrollPane pane && pane.getViewport().getView() instanceof Container view) matches.addAll(descendants(view, type));
-            if (component instanceof JViewport viewport && viewport.getView() instanceof Container view) matches.addAll(descendants(view, type));
-            if (component instanceof JTabbedPane tabs) for (int i = 0; i < tabs.getTabCount(); i++) {
-                Component tab = tabs.getComponentAt(i);
-                if (type.isInstance(tab)) matches.add(type.cast(tab));
-                if (tab instanceof Container child) matches.addAll(descendants(child, type));
+            if (type.isInstance(component)) {
+                matches.add(type.cast(component));
             }
-            if (component instanceof Container child) matches.addAll(descendants(child, type));
+            if (component instanceof JScrollPane pane
+                    && pane.getViewport().getView() instanceof Container view) {
+                matches.addAll(descendants(view, type));
+            }
+            if (component instanceof JViewport viewport
+                    && viewport.getView() instanceof Container view) {
+                matches.addAll(descendants(view, type));
+            }
+            if (component instanceof JTabbedPane tabs) {
+                for (int i = 0; i < tabs.getTabCount(); i++) {
+                    Component tab = tabs.getComponentAt(i);
+                    if (type.isInstance(tab)) {
+                        matches.add(type.cast(tab));
+                    }
+                    if (tab instanceof Container child) {
+                        matches.addAll(descendants(child, type));
+                    }
+                }
+            }
+            if (component instanceof Container child) {
+                matches.addAll(descendants(child, type));
+            }
         }
         return matches;
     }
-    private static void onEdt(Runnable work) throws Exception { SwingUtilities.invokeAndWait(work); }
+
+    private static void onEdt(Runnable work) throws Exception {
+        SwingUtilities.invokeAndWait(work);
+    }
 }

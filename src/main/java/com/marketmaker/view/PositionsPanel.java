@@ -24,7 +24,7 @@ public class PositionsPanel extends TitledPanel {
         super("Positions");
         setPreferredSize(new Dimension(358, 138));
 
-        getContent().add(Tables.scroll(Tables.create(model)), BorderLayout.CENTER);
+        getContent().add(Tables.scroll(Tables.create(model, "Open positions")), BorderLayout.CENTER);
 
         viewModel.onState(response -> model.setRows(response.getPositions()));
     }

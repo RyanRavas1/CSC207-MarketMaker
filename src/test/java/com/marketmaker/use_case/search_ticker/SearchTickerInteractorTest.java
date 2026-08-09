@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SearchTickerInteractorTest {
 
-    private static class FakePresenter implements SearchTickerOutputBoundary {
+    private static final class FakePresenter implements SearchTickerOutputBoundary {
         SearchTickerResponseModel successResponse;
         String failureMessage;
 
@@ -26,7 +26,7 @@ class SearchTickerInteractorTest {
         }
     }
 
-    private static class FakeTickerDataAccess implements TickerDataAccessInterface {
+    private static final class FakeTickerDataAccess implements TickerDataAccessInterface {
         @Override
         public Quote fetchQuote(String ticker) {
             if (!ticker.equals("AAPL")) {

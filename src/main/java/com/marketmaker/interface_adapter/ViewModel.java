@@ -3,6 +3,8 @@ package com.marketmaker.interface_adapter;
 import java.beans.PropertyChangeSupport;
 import java.util.function.Consumer;
 
+import javax.swing.SwingUtilities;
+
 /**
  * Holds the state one panel displays and notifies that panel when it changes.
  *
@@ -10,6 +12,11 @@ import java.util.function.Consumer;
  * use-case layer never depends on Swing. One generic view model serves every panel
  * because they all have the same shape: a single immutable state object, replaced
  * wholesale each time an interactor reports a result.
+ *
+ * <p>Interactors run on a worker thread — quoting a ticker is an HTTP round trip — but Swing
+ * may only be touched from the event dispatch thread. The hop happens here, once, rather than
+ * in every presenter and panel: a presenter writes from wherever it happens to be running, and
+ * subscribers are always called on the EDT.
  *
  * @param <S> the state type, normally a use-case response model
  */
@@ -30,7 +37,7 @@ public class ViewModel<S> {
     public void setState(S newState) {
         S previous = this.state;
         this.state = newState;
-        support.firePropertyChange(STATE, previous, newState);
+        onEventThread(() -> support.firePropertyChange(STATE, previous, newState));
     }
 
     public String getError() {
@@ -40,7 +47,19 @@ public class ViewModel<S> {
     public void setError(String newError) {
         String previous = this.error;
         this.error = newError;
-        support.firePropertyChange(ERROR, previous, newError);
+        onEventThread(() -> support.firePropertyChange(ERROR, previous, newError));
+    }
+
+    /**
+     * Runs {@code notify} on the event dispatch thread, immediately when already there so a
+     * presenter called from the EDT still sees its listeners run before it returns.
+     */
+    private static void onEventThread(Runnable notify) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            notify.run();
+        } else {
+            SwingUtilities.invokeLater(notify);
+        }
     }
 
     /** Runs {@code listener} with the new state every time a presenter publishes one. */

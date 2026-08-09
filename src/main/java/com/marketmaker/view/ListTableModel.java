@@ -37,6 +37,11 @@ public class ListTableModel<T> extends AbstractTableModel {
         });
     }
 
+    /** The object behind a row, for panels that act on the user's selection. */
+    public T getRow(int row) {
+        return rows.get(row);
+    }
+
     public CellStyle styleAt(int column) {
         return columns.get(column).style();
     }

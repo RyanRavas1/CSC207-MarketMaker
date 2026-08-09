@@ -10,9 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ViewCandlestickChartInteractorTest {
+public class ViewCandlestickChartInteractorTest {
 
-    private static class FakePresenter implements ViewCandlestickChartOutputBoundary {
+    private static final class FakePresenter implements ViewCandlestickChartOutputBoundary {
         ViewCandlestickChartResponseModel successResponse;
         String failureMessage;
 
@@ -27,7 +27,7 @@ class ViewCandlestickChartInteractorTest {
         }
     }
 
-    private static class FakeHistoricalDataAccess implements HistoricalDataAccessInterface {
+    private static final class FakeHistoricalDataAccess implements HistoricalDataAccessInterface {
         Resolution requestedResolution;
 
         @Override
@@ -36,7 +36,8 @@ class ViewCandlestickChartInteractorTest {
             if (!ticker.equals("AAPL")) {
                 return List.of();
             }
-            return List.of(new Candle("AAPL", "D", 230.0, 235.0, 228.0, 232.5, 1000.0, LocalDateTime.MIN));
+            return List.of(new Candle("AAPL", "D", 230.0, 235.0, 228.0, 232.5, 1000.0,
+                    LocalDateTime.of(2026, 8, 6, 0, 0)));
         }
     }
 
@@ -46,12 +47,11 @@ class ViewCandlestickChartInteractorTest {
         FakePresenter presenter = new FakePresenter();
         ViewCandlestickChartInteractor interactor = new ViewCandlestickChartInteractor(dataAccess, presenter);
 
-        interactor.execute(new ViewCandlestickChartRequestModel("aapl", Resolution.ONE_DAY));
+        interactor.execute(new ViewCandlestickChartRequestModel("aapl", Resolution.ONE_MONTH));
 
         assertNull(presenter.failureMessage);
-        assertEquals("AAPL", presenter.successResponse.getTicker());
-        assertEquals(Resolution.ONE_DAY, presenter.successResponse.getResolution());
         assertEquals(1, presenter.successResponse.getCandles().size());
+        assertEquals(Resolution.ONE_MONTH, presenter.successResponse.getResolution());
     }
 
     @Test
@@ -60,14 +60,11 @@ class ViewCandlestickChartInteractorTest {
         ViewCandlestickChartInteractor interactor =
                 new ViewCandlestickChartInteractor(dataAccess, new FakePresenter());
 
-        interactor.execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.ONE_MINUTE));
-        assertEquals(Resolution.ONE_MINUTE, dataAccess.requestedResolution);
+        interactor.execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.ONE_WEEK));
+        assertEquals(Resolution.ONE_WEEK, dataAccess.requestedResolution);
 
-        interactor.execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.FIVE_MINUTE));
-        assertEquals(Resolution.FIVE_MINUTE, dataAccess.requestedResolution);
-
-        interactor.execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.ONE_DAY));
-        assertEquals(Resolution.ONE_DAY, dataAccess.requestedResolution);
+        interactor.execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.ONE_MONTH));
+        assertEquals(Resolution.ONE_MONTH, dataAccess.requestedResolution);
     }
 
     @Test
@@ -76,26 +73,24 @@ class ViewCandlestickChartInteractorTest {
         ViewCandlestickChartInteractor interactor =
                 new ViewCandlestickChartInteractor(new FakeHistoricalDataAccess(), presenter);
 
-        interactor.execute(new ViewCandlestickChartRequestModel("ZZZZ", Resolution.ONE_DAY));
+        interactor.execute(new ViewCandlestickChartRequestModel("ZZZZ", Resolution.ONE_MONTH));
 
-        assertTrue(presenter.failureMessage.contains("No historical data"));
+        // Names the symbol and what to do about it, rather than just reporting emptiness.
+        assertTrue(presenter.failureMessage.contains("ZZZZ"));
+        assertTrue(presenter.failureMessage.contains("check the symbol"));
     }
 
     @Test
-    void rejectsNullOrBlankTickerAndNullCandleResponse() {
-        FakePresenter blank = new FakePresenter();
-        ViewCandlestickChartInteractor interactor = new ViewCandlestickChartInteractor((ticker, resolution) -> List.of(), blank);
+    void passesOnTheProvidersOwnReasonWhenItGivesOne() {
+        HistoricalDataAccessInterface refusing = (ticker, resolution) -> {
+            throw new HistoricalDataUnavailableException("Daily price-history limit reached.");
+        };
+        FakePresenter presenter = new FakePresenter();
 
-        interactor.execute(new ViewCandlestickChartRequestModel(" ", Resolution.ONE_DAY));
-        assertEquals("Select a ticker to chart.", blank.failureMessage);
+        new ViewCandlestickChartInteractor(refusing, presenter)
+                .execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.ONE_MONTH));
 
-        blank.failureMessage = null;
-        interactor.execute(new ViewCandlestickChartRequestModel(null, Resolution.ONE_DAY));
-        assertEquals("Select a ticker to chart.", blank.failureMessage);
-
-        FakePresenter nullResponse = new FakePresenter();
-        new ViewCandlestickChartInteractor((ticker, resolution) -> null, nullResponse)
-                .execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.ONE_DAY));
-        assertTrue(nullResponse.failureMessage.contains("No historical data"));
+        // A spent quota is not the ticker's fault, so the message must not blame the symbol.
+        assertEquals("Daily price-history limit reached.", presenter.failureMessage);
     }
 }

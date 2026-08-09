@@ -16,6 +16,8 @@ import javax.swing.JTable;
 import javax.swing.RowFilter;
 import javax.swing.table.TableRowSorter;
 
+import com.marketmaker.entities.Order;
+import com.marketmaker.interface_adapter.CancelOrderController;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.use_case.view_order_history.OrderHistoryRow;
 import com.marketmaker.use_case.view_order_history.TradeHistoryRow;
@@ -50,19 +52,23 @@ public class OrderHistoryPanel extends TitledPanel {
     private final ListTableModel<TradeHistoryRow> tradeModel = new ListTableModel<>(TRADE_COLUMNS);
     private final TableRowSorter<ListTableModel<OrderHistoryRow>> orderSorter;
     private final JLabel message = new JLabel();
+    private final JButton cancel = new JButton("Cancel Order");
 
-    public OrderHistoryPanel(ViewModel<ViewOrderHistoryResponseModel> viewModel) {
+    public OrderHistoryPanel(ViewModel<ViewOrderHistoryResponseModel> viewModel,
+                             ViewModel<String> status,
+                             CancelOrderController cancelController) {
         super("Order & Trade History");
         setPreferredSize(new Dimension(1440, 206));
 
-        JTable orders = Tables.create(orderModel);
+        JTable orders = Tables.create(orderModel, "Order history");
         orderSorter = new TableRowSorter<>(orderModel);
         orders.setRowSorter(orderSorter);
+        wireCancel(orders, cancelController);
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.setFont(UiTheme.BASE);
         tabs.addTab("Orders", Tables.scroll(orders));
-        tabs.addTab("Trades", Tables.scroll(Tables.create(tradeModel)));
+        tabs.addTab("Trades", Tables.scroll(Tables.create(tradeModel, "Trade history")));
 
         getContent().add(buildFilterRow(), BorderLayout.NORTH);
         getContent().add(tabs, BorderLayout.CENTER);
@@ -70,8 +76,42 @@ public class OrderHistoryPanel extends TitledPanel {
         viewModel.onState(response -> {
             orderModel.setRows(response.getOrders());
             tradeModel.setRows(response.getTrades());
+            // The refresh that follows a cancel replaces every row, so nothing stays selected.
+            cancel.setEnabled(false);
         });
         viewModel.onError(this::showError);
+        status.onState(this::showMessage);
+    }
+
+    /**
+     * Cancelling needs a specific order, so the button follows the selection: it wakes up only
+     * on a row that is still pending, which is the one case the use case will accept.
+     */
+    private void wireCancel(JTable orders, CancelOrderController controller) {
+        cancel.setFont(UiTheme.BASE);
+        cancel.setMargin(new Insets(3, 9, 3, 9));
+        cancel.setEnabled(false);
+
+        orders.getSelectionModel().addListSelectionListener(
+                event -> cancel.setEnabled(selectedOrder(orders) != null));
+
+        cancel.addActionListener(event -> {
+            OrderHistoryRow row = selectedOrder(orders);
+            if (row != null) {
+                controller.cancel(row.getOrderId());
+            }
+        });
+    }
+
+    /** @return the selected row when it can be cancelled, or null when it cannot */
+    private OrderHistoryRow selectedOrder(JTable orders) {
+        int selected = orders.getSelectedRow();
+        if (selected < 0) {
+            return null;
+        }
+        // The table is sorted and filtered, so the view's row number is not the model's.
+        OrderHistoryRow row = orderModel.getRow(orders.convertRowIndexToModel(selected));
+        return row.getStatus() == Order.Status.PENDING ? row : null;
     }
 
     private JPanel buildFilterRow() {
@@ -85,6 +125,7 @@ public class OrderHistoryPanel extends TitledPanel {
         filters.add(filterButton("Pending", "PENDING"));
         filters.add(filterButton("Filled", "FILLED"));
         filters.add(filterButton("Cancelled", "CANCELED"));
+        filters.add(cancel);
 
         message.setFont(UiTheme.BASE_ITALIC);
         message.setForeground(UiTheme.TEXT_LABEL);
@@ -105,6 +146,11 @@ public class OrderHistoryPanel extends TitledPanel {
         button.addActionListener(event -> orderSorter.setRowFilter(
                 status == null ? null : RowFilter.regexFilter("^" + status + "$", STATUS_COLUMN)));
         return button;
+    }
+
+    private void showMessage(String text) {
+        message.setText(text);
+        message.setForeground(UiTheme.TEXT_LABEL);
     }
 
     private void showError(String errorMessage) {

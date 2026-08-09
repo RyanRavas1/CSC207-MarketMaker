@@ -28,3 +28,5 @@ replay_pid*
 
 # Api key file
 .env
+data/
+.DS_Store

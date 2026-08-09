@@ -136,7 +136,7 @@ class AlphaVantageApiClientTest {
         stubClient.responseBody = SAMPLE_JSON;
 
         AlphaVantageApiClient client = new AlphaVantageApiClient("demo_key", stubClient, tempDir.toString());
-        LocalDateTime requested = LocalDateTime.of(2024, Month.APRIL, 1, 14, 35, 0);
+        LocalDateTime requested = LocalDateTime.of(2024, Month.MARCH, 1, 14, 35, 0);
 
         Optional<Candle> candleOpt = client.findPriceOnOrBefore("aapl", requested,
                 AlphaVantageApiClient.Interval.FIVE_MINUTES);
@@ -161,12 +161,12 @@ class AlphaVantageApiClientTest {
         StubHttpClient stubClient = new StubHttpClient();
         AlphaVantageApiClient client = new AlphaVantageApiClient("demo_key", stubClient, tempDir.toString());
 
-        LocalDateTime requested = LocalDateTime.of(2024, Month.APRIL, 1, 14, 32, 0); // between 14:30 and 14:35
+        LocalDateTime requested = LocalDateTime.of(2024, Month.MARCH, 1, 14, 32, 0); // between 14:30 and 14:35
         Optional<Candle> candleOpt = client.findPriceOnOrBefore("AAPL", requested, AlphaVantageApiClient.Interval.FIVE_MINUTES);
 
         assertTrue(candleOpt.isPresent());
         // Nearest before 14:32:00 is 14:30:00
-        assertEquals(LocalDateTime.of(2024, Month.APRIL, 1, 14, 30, 0), candleOpt.get().getTimestamp());
+        assertEquals(LocalDateTime.of(2024, Month.MARCH, 1, 14, 30, 0), candleOpt.get().getTimestamp());
         assertNull(stubClient.lastRequest); // Did not make HTTP call
     }
 
@@ -176,7 +176,7 @@ class AlphaVantageApiClientTest {
         stubClient.responseBody = SAMPLE_JSON;
 
         AlphaVantageApiClient client = new AlphaVantageApiClient("demo_key", stubClient, tempDir.toString());
-        LocalDateTime earlyDate = LocalDateTime.of(2024, Month.APRIL, 1, 14, 0, 0);
+        LocalDateTime earlyDate = LocalDateTime.of(2024, Month.MARCH, 1, 14, 0, 0);
 
         Optional<Candle> candleOpt = client.findPriceOnOrBefore("AAPL", earlyDate, AlphaVantageApiClient.Interval.FIVE_MINUTES);
 

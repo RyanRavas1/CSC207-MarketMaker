@@ -26,6 +26,14 @@ public final class Tables {
     }
 
     public static <T> JTable create(ListTableModel<T> model) {
+        return create(model, null);
+    }
+
+    /**
+     * @param accessibleName what a screen reader should call this table; a bare JTable is
+     *                       announced without saying which of the four it is
+     */
+    public static <T> JTable create(ListTableModel<T> model, String accessibleName) {
         // getCellRenderer is overridden rather than registering defaults per column class:
         // JTable keeps exact entries for Double and Float that beat anything registered
         // against Number, which silently reverted prices to its own one-decimal format.
@@ -43,6 +51,9 @@ public final class Tables {
         table.setBackground(UiTheme.PANEL_BG);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setAutoCreateRowSorter(true);
+        if (accessibleName != null) {
+            table.getAccessibleContext().setAccessibleName(accessibleName);
+        }
 
         JTableHeader header = table.getTableHeader();
         header.setFont(UiTheme.BASE_BOLD);
