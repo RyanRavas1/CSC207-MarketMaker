@@ -9,6 +9,7 @@ import javax.swing.JPanel;
 
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.use_case.view_portfolio_summary.ViewPortfolioSummaryResponseModel;
+import com.marketmaker.interface_adapter.Format;
 
 /** The account strip under the toolbar: cash, buying power, equity and the day's P/L. */
 public class AccountSummaryBar extends JPanel {

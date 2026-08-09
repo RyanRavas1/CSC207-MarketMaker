@@ -10,6 +10,8 @@ import org.json.JSONObject;
 import com.marketmaker.data_access.FinnhubApiClient;
 import com.marketmaker.data_access.exceptions.FinnhubApiException;
 import com.marketmaker.entities.Quote;
+import com.marketmaker.use_case.PriceFeed;
+import com.marketmaker.use_case.PriceFeedException;
 
 /** Live quotes from Finnhub's /quote endpoint. */
 public class FinnhubPriceFeed implements PriceFeed {
@@ -17,7 +19,7 @@ public class FinnhubPriceFeed implements PriceFeed {
      * The free tier allows 60 calls a minute, and the watchlist, the profile screen and the
      * order matcher all ask for the same tickers seconds apart. Serving a few-second-old quote
      * caps one ticker at 12 calls a minute no matter how many callers there are.
-     * ponytail: fixed TTL, no eviction — bound the map if a watchlist ever gets long enough
+     * ponytail: fixed TTL, no eviction - bound the map if a watchlist ever gets long enough
      * to matter, or batch tickers into one request.
      */
     private static final Duration TTL = Duration.ofSeconds(5);
@@ -25,7 +27,7 @@ public class FinnhubPriceFeed implements PriceFeed {
     private final FinnhubApiClient client;
     private final Map<String, Quote> cache = new ConcurrentHashMap<>();
     // When each cached quote was fetched. Kept apart from the quote's own timestamp, which is
-    // when the market last traded it — after the close those are hours apart, and expiring the
+    // when the market last traded it - after the close those are hours apart, and expiring the
     // cache against a market timestamp would refetch a price that cannot change.
     private final Map<String, Instant> fetchedAt = new ConcurrentHashMap<>();
 
@@ -54,7 +56,7 @@ public class FinnhubPriceFeed implements PriceFeed {
         JSONObject json = new JSONObject(body);
         double price = json.optDouble("c", 0.0);
         if (price <= 0.0) {
-            throw new PriceFeedException("No quote for " + ticker + " — check the ticker symbol.");
+            throw new PriceFeedException("No quote for " + ticker + " - check the ticker symbol.");
         }
 
         // "t" is when the market last traded this price. Stamping the quote with the time we

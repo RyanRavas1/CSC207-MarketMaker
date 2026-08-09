@@ -1,6 +1,6 @@
 package com.marketmaker.use_case.add_to_watchlist;
 
-import com.marketmaker.data_access.AccountDAO;
+import com.marketmaker.use_case.AccountDAO;
 import com.marketmaker.entities.Account;
 import com.marketmaker.use_case.receive_live_quotes.LiveQuoteDataAccessInterface;
 import com.marketmaker.use_case.receive_live_quotes.QuoteUpdateListener;

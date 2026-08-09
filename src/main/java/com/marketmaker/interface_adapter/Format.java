@@ -1,4 +1,4 @@
-package com.marketmaker.view;
+package com.marketmaker.interface_adapter;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter;
 public final class Format {
 
     /** Shown wherever a value is genuinely absent, e.g. the limit price of a market order. */
-    public static final String ABSENT = "—";
+    public static final String ABSENT = "-";
 
     private static final DateTimeFormatter TIME =
             DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());

@@ -8,6 +8,7 @@ import java.awt.RenderingHints;
 import java.util.List;
 
 import javax.swing.JComponent;
+import com.marketmaker.interface_adapter.Format;
 
 /**
  * Draws a price series as a single line.
@@ -97,7 +98,7 @@ public class PriceLineChart extends JComponent {
     }
 
     /**
-     * Dates along the bottom, thinned to fit and always including the last one — the right
+     * Dates along the bottom, thinned to fit and always including the last one - the right
      * edge is today, and a chart whose final tick is three days ago reads as out of date.
      */
     private void drawDates(Graphics2D canvas, int plotWidth, int plotHeight) {

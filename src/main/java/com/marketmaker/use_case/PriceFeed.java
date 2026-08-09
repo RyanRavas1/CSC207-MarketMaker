@@ -1,4 +1,4 @@
-package com.marketmaker.price_feed;
+package com.marketmaker.use_case;
 
 import com.marketmaker.entities.Quote;
 

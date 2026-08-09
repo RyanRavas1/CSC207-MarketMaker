@@ -3,14 +3,14 @@ package com.marketmaker.use_case.place_order;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.marketmaker.data_access.AccountDAO;
+import com.marketmaker.use_case.AccountDAO;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Order;
 import com.marketmaker.entities.Position;
 import com.marketmaker.entities.Quote;
 import com.marketmaker.entities.Trade;
-import com.marketmaker.price_feed.PriceFeed;
-import com.marketmaker.price_feed.PriceFeedException;
+import com.marketmaker.use_case.PriceFeed;
+import com.marketmaker.use_case.PriceFeedException;
 
 /** Fills a market order immediately at the live quoted price. */
 public class PlaceOrderInteractor implements PlaceOrderInputBoundary {

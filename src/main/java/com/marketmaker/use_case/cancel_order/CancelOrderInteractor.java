@@ -1,6 +1,6 @@
 package com.marketmaker.use_case.cancel_order;
 
-import com.marketmaker.data_access.AccountDAO;
+import com.marketmaker.use_case.AccountDAO;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Order;
 

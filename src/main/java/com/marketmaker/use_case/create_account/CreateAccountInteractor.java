@@ -1,6 +1,6 @@
 package com.marketmaker.use_case.create_account;
 
-import com.marketmaker.data_access.AccountDAO;
+import com.marketmaker.use_case.AccountDAO;
 import com.marketmaker.entities.Account;
 
 /** Sets up a new paper-trading account with a fixed starting cash balance. */

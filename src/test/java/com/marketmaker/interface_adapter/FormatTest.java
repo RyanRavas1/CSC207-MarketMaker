@@ -1,4 +1,4 @@
-package com.marketmaker.view;
+package com.marketmaker.interface_adapter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -15,6 +15,7 @@ import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Order;
 import com.marketmaker.entities.Position;
 import com.marketmaker.entities.Trade;
+import com.marketmaker.use_case.AccountDAO;
 
 /**
  * Persists a full account snapshot to a JSON file, one file per account id.

@@ -1,4 +1,4 @@
-package com.marketmaker.data_access;
+package com.marketmaker.use_case;
 
 import com.marketmaker.entities.Account;
 

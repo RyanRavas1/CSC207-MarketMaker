@@ -1,4 +1,4 @@
-package com.marketmaker.price_feed;
+package com.marketmaker.use_case;
 
 /**
  * A quote couldn't be fetched. Lives here rather than in data_access so use cases can

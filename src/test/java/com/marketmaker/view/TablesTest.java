@@ -11,11 +11,12 @@ import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 
 import org.junit.jupiter.api.Test;
+import com.marketmaker.interface_adapter.Format;
 
 /**
  * Guards the renderer wiring. JTable keeps an exact {@code Double.class} entry in its
  * default renderer registry, so anything registered against {@code Number} loses and
- * prices quietly revert to Swing's own formatting — 228.9 instead of 228.90.
+ * prices quietly revert to Swing's own formatting - 228.9 instead of 228.90.
  */
 class TablesTest {
 
