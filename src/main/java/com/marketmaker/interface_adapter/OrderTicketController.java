@@ -25,7 +25,14 @@ public class OrderTicketController {
     }
 
     /**
-     * @param trigger the limit or stop price, ignored for a market order
+     * Reads the ticket and sends it to the use case for that order type.
+     *
+     * <p>Every field the chosen order type needs is validated before anything is
+     * dispatched, so a ticket is either fully readable and sent, or rejected with nothing
+     * having run. The trigger field is only read for limit and stop orders, because it is
+     * not part of a market order: validating it for every order type would reject a valid
+     * market ticket over stale text left in a box that does not apply to it.
+     *
      * @return null when the ticket was sent, or the reason it could not be read
      */
     public String place(String ticker, Order.Side side, Order.Type type,
@@ -37,27 +44,30 @@ public class OrderTicketController {
 
         // The form is free text, so bad numbers are caught here rather than reaching a use
         // case that can only report them as an order failure.
-        int quantity;
+        final int quantity;
         try {
             quantity = Integer.parseInt(quantityText.trim());
         } catch (NumberFormatException exception) {
             return "Quantity must be a whole number.";
         }
 
-        if (type == Order.Type.MARKET) {
+        final boolean resting = type != Order.Type.MARKET;
+        double trigger = 0.0;
+        if (resting) {
+            try {
+                trigger = Double.parseDouble(triggerText.trim());
+            } catch (NumberFormatException exception) {
+                return type == Order.Type.LIMIT ? "Enter a limit price." : "Enter a stop price.";
+            }
+        }
+
+        // Past this point the ticket is known to be readable, so exactly one dispatch runs.
+        if (resting) {
+            restingInteractor.execute(new PlaceLimitStopOrderRequestModel(
+                    accountId, symbol, side, type, quantity, trigger));
+        } else {
             marketInteractor.execute(new PlaceOrderRequestModel(accountId, symbol, side, quantity));
-            return null;
         }
-
-        double trigger;
-        try {
-            trigger = Double.parseDouble(triggerText.trim());
-        } catch (NumberFormatException exception) {
-            return type == Order.Type.LIMIT ? "Enter a limit price." : "Enter a stop price.";
-        }
-
-        restingInteractor.execute(new PlaceLimitStopOrderRequestModel(
-                accountId, symbol, side, type, quantity, trigger));
         return null;
     }
 }
