@@ -6,13 +6,12 @@ import com.marketmaker.use_case.place_limit_stop_order.PlaceLimitStopOrderOutput
 import com.marketmaker.use_case.place_limit_stop_order.PlaceLimitStopOrderResponseModel;
 import com.marketmaker.use_case.place_order.PlaceOrderOutputBoundary;
 import com.marketmaker.use_case.place_order.PlaceOrderResponseModel;
-import com.marketmaker.view.Format;
 
 /**
  * Says what happened to an order, in one line under the ticket.
  *
  * <p>Serves every order use case because an order's outcome reads the same wherever it came
- * from: placed, rested or cancelled. Each outcome also reloads the screens that it changes —
+ * from: placed, rested or cancelled. Each outcome also reloads the screens that it changes -
  * cash, holdings and the log.
  */
 public class OrderFeedbackPresenter implements PlaceOrderOutputBoundary,
@@ -27,7 +26,7 @@ public class OrderFeedbackPresenter implements PlaceOrderOutputBoundary,
 
     @Override
     public void presentSuccess(PlaceOrderResponseModel response) {
-        status.setState(String.format("Filled %d %s at $%s — you now hold %d shares.",
+        status.setState(String.format("Filled %d %s at $%s - you now hold %d shares.",
                 response.getQuantity(), response.getTicker(),
                 Format.money(response.getFillPrice()), response.getNewShareCount()));
         refresh.run();
@@ -48,7 +47,9 @@ public class OrderFeedbackPresenter implements PlaceOrderOutputBoundary,
 
     @Override
     public void presentFailure(String errorMessage) {
-        status.setState(errorMessage);
+        // The error channel, not the state channel: a rejection reads differently from a fill,
+        // and views that show both need to tell them apart to colour them.
+        status.setError(errorMessage);
         refresh.run();
     }
 }

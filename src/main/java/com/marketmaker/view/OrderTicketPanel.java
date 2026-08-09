@@ -1,12 +1,14 @@
 package com.marketmaker.view;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.event.KeyEvent;
 
 import javax.swing.BorderFactory;
@@ -22,16 +24,20 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 import com.marketmaker.entities.Order;
+import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
 import com.marketmaker.interface_adapter.OrderTicketController;
 import com.marketmaker.interface_adapter.RealizedPnLController;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.use_case.view_portfolio_summary.ViewPortfolioSummaryResponseModel;
+import com.marketmaker.interface_adapter.Format;
 
 public class OrderTicketPanel extends TitledPanel {
 
     private final JLabel buyingPower = new JLabel(Format.ABSENT);
     private final RealizedPnLController realizedPnL;
     private final JLabel estimatedCost = new JLabel(Format.ABSENT);
+    // Money out on a buy, money in on a sell — one row, so the caption follows the side.
+    private final JLabel estimateCaption = new JLabel("Estimated cost");
     private final JLabel hint = new JLabel(" ");
 
     private final JTextField symbolField = textField("", true);
@@ -49,9 +55,12 @@ public class OrderTicketPanel extends TitledPanel {
     private final OrderTicketController controller;
 
     private double availableCash;
+    private final Map<String, Double> lastPrices = new HashMap<>();
+    private String outcome;
 
     public OrderTicketPanel(ViewModel<ViewPortfolioSummaryResponseModel> summary,
-                            ViewModel<String> status, OrderTicketController controller,
+                            ViewModel<String> status, ViewModel<WatchlistResponseModel> quotes,
+                            OrderTicketController controller,
                             RealizedPnLController realizedPnL) {
         super("Order Ticket");
         this.controller = controller;
@@ -64,31 +73,45 @@ public class OrderTicketPanel extends TitledPanel {
         summary.onState(response -> {
             availableCash = response.getBuyingPower();
             buyingPower.setText("$" + Format.money(response.getBuyingPower()));
+            // No refreshEstimate() here: a failed submit sets hint via status.onState below,
+            // then triggers this same summary refresh - recomputing hint here would overwrite
+            // that failure message before the user ever sees it.
+        });
+        status.onState(filled -> showOutcome(filled, UiTheme.GREEN));
+        status.onError(rejected -> showOutcome(rejected, UiTheme.RED));
+        quotes.onState(latest -> {
+            for (WatchlistResponseModel.Row row : latest.getRows()) {
+                // A watched ticker with no price yet has nothing to estimate against.
+                if (row.getPrice() != null) {
+                    lastPrices.put(row.getTicker(), row.getPrice());
+                }
+            }
             refreshEstimate();
         });
-        status.onState(hint::setText);
 
         wire();
     }
 
     /** Keeps the form honest about itself: the button, the enabled fields and the estimate. */
     private void wire() {
-        ActionListener onChange = event -> refreshEstimate();
+        ActionListener onChange = event -> editedTicket();
         for (JRadioButton button : List.of(buy, sell, market, limit, stop)) {
             button.addActionListener(onChange);
         }
         DocumentListener typing = new DocumentListener() {
             @Override
-            public void insertUpdate(DocumentEvent event) { refreshEstimate(); }
+            public void insertUpdate(DocumentEvent event) { editedTicket(); }
 
             @Override
-            public void removeUpdate(DocumentEvent event) { refreshEstimate(); }
+            public void removeUpdate(DocumentEvent event) { editedTicket(); }
 
             @Override
-            public void changedUpdate(DocumentEvent event) { refreshEstimate(); }
+            public void changedUpdate(DocumentEvent event) { editedTicket(); }
         };
+        symbolField.getDocument().addDocumentListener(typing);
         quantityField.getDocument().addDocumentListener(typing);
         limitField.getDocument().addDocumentListener(typing);
+        stopField.getDocument().addDocumentListener(typing);
 
         place.addActionListener(event -> submit());
         refreshEstimate();
@@ -102,9 +125,20 @@ public class OrderTicketPanel extends TitledPanel {
         String problem = controller.place(symbolField.getText(), side, type,
                 quantityField.getText(), trigger);
         if (problem != null) {
-            hint.setText(problem);
-            hint.setForeground(UiTheme.RED);
+            showOutcome(problem, UiTheme.RED);
         }
+    }
+
+    /**
+     * Shows what came back from the last submit, and pins it there. Background refreshes
+     * keep repricing the ticket underneath, so without the pin the answer to the click would
+     * be overwritten by an estimate a moment later. The next edit to the form releases it:
+     * by then the message describes an order the ticket no longer holds.
+     */
+    private void showOutcome(String message, Color colour) {
+        outcome = message;
+        hint.setText(message);
+        hint.setForeground(colour);
     }
 
     /** Lets the toolbar's Buy and Sell put the ticket on the right side of the trade. */
@@ -122,25 +156,38 @@ public class OrderTicketPanel extends TitledPanel {
         return limit.isSelected() ? Order.Type.LIMIT : Order.Type.STOP_LOSS;
     }
 
+    /** Clears the pinned outcome, because the ticket no longer describes that order. */
+    private void editedTicket() {
+        outcome = null;
+        refreshEstimate();
+    }
+
     /**
-     * A market order has no price to quote against until it fills, so the estimate only
-     * appears once the user names a limit or stop price.
+     * A market order names no price of its own, so it is estimated against the last quote
+     * seen for the symbol - indicative only, since it fills at whatever the feed says on
+     * submit. With no quote yet there is nothing honest to show.
      */
     private void refreshEstimate() {
         place.setText(buy.isSelected() ? "Place Buy Order" : "Place Sell Order");
+        estimateCaption.setText(buy.isSelected() ? "Estimated cost" : "Estimated proceeds");
         limitField.setEnabled(limit.isSelected());
         stopField.setEnabled(stop.isSelected());
 
-        Double price = parse(stop.isSelected() ? stopField.getText() : limitField.getText());
+        Double price = market.isSelected()
+                ? lastPrices.get(symbolField.getText().trim().toUpperCase())
+                : parse(stop.isSelected() ? stopField.getText() : limitField.getText());
         Integer quantity = parseWhole(quantityField.getText());
-        if (price == null || quantity == null || market.isSelected()) {
+        if (price == null || quantity == null) {
             estimatedCost.setText(Format.ABSENT);
-            hint.setText(" ");
+            clearHint();
             return;
         }
 
         double cost = price * quantity;
         estimatedCost.setText("$" + Format.money(cost));
+        if (outcome != null) {
+            return;
+        }
         if (buy.isSelected() && cost > availableCash) {
             hint.setText("Not enough buying power");
             hint.setForeground(UiTheme.RED);
@@ -152,9 +199,15 @@ public class OrderTicketPanel extends TitledPanel {
         }
     }
 
+    private void clearHint() {
+        if (outcome == null) {
+            hint.setText(" ");
+        }
+    }
+
     /**
      * A sell has no buying-power problem to warn about, so the line is spent on what the sale
-     * would actually realize against the average price paid — the number a seller is weighing.
+     * would actually realize against the average price paid - the number a seller is weighing.
      */
     private void showRealized(double price, int quantity) {
         String realized = realizedPnL.estimate(symbolField.getText(), quantity, price);
@@ -207,10 +260,10 @@ public class OrderTicketPanel extends TitledPanel {
         bottom.add(divider());
         estimatedCost.setFont(UiTheme.BASE_BOLD);
         estimatedCost.setForeground(UiTheme.TEXT);
-        bottom.add(summaryRow("Estimated cost", estimatedCost));
+        bottom.add(summaryRow(estimateCaption, estimatedCost));
         buyingPower.setFont(UiTheme.BASE);
         buyingPower.setForeground(UiTheme.TEXT);
-        bottom.add(summaryRow("Buying power", buyingPower));
+        bottom.add(summaryRow(new JLabel("Buying power"), buyingPower));
 
         hint.setFont(UiTheme.BASE);
         hint.setForeground(UiTheme.GREEN);
@@ -294,20 +347,12 @@ public class OrderTicketPanel extends TitledPanel {
         return d;
     }
 
-    private JComponent summaryRow(String caption, String value, Font valueFont) {
-        JLabel right = new JLabel(value);
-        right.setFont(valueFont);
-        right.setForeground(UiTheme.TEXT);
-        return summaryRow(caption, right);
-    }
-
-    private JComponent summaryRow(String caption, JLabel right) {
+    private JComponent summaryRow(JLabel left, JLabel right) {
         JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(false);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
 
-        JLabel left = new JLabel(caption);
         left.setFont(UiTheme.BASE);
         left.setForeground(UiTheme.TEXT);
 

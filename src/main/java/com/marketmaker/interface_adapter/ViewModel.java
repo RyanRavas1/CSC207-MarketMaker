@@ -13,7 +13,7 @@ import javax.swing.SwingUtilities;
  * because they all have the same shape: a single immutable state object, replaced
  * wholesale each time an interactor reports a result.
  *
- * <p>Interactors run on a worker thread — quoting a ticker is an HTTP round trip — but Swing
+ * <p>Interactors run on a worker thread - quoting a ticker is an HTTP round trip - but Swing
  * may only be touched from the event dispatch thread. The hop happens here, once, rather than
  * in every presenter and panel: a presenter writes from wherever it happens to be running, and
  * subscribers are always called on the EDT.
@@ -35,9 +35,11 @@ public class ViewModel<S> {
     }
 
     public void setState(S newState) {
-        S previous = this.state;
         this.state = newState;
-        onEventThread(() -> support.firePropertyChange(STATE, previous, newState));
+        // Old value is passed as null so an unchanged state still notifies: PropertyChangeSupport
+        // drops equal old/new pairs, which would silently swallow the same order failure twice
+        // in a row - the second click would look like nothing happened.
+        onEventThread(() -> support.firePropertyChange(STATE, null, newState));
     }
 
     public String getError() {
@@ -45,9 +47,8 @@ public class ViewModel<S> {
     }
 
     public void setError(String newError) {
-        String previous = this.error;
         this.error = newError;
-        onEventThread(() -> support.firePropertyChange(ERROR, previous, newError));
+        onEventThread(() -> support.firePropertyChange(ERROR, null, newError));
     }
 
     /**
