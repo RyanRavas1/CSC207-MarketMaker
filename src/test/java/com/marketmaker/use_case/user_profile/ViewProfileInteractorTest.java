@@ -29,13 +29,22 @@ class ViewProfileInteractorTest {
             public void presentFailure(String e) { throw new AssertionError(e); }
         };
 
-        new ViewProfileInteractor(dao, feed, presenter)
-                .execute(new ViewProfileRequestModel("ericsson"));
+        ViewProfileRequestModel req = new ViewProfileRequestModel("ericsson");
+        assertEquals("ericsson", req.getAccountId());
+
+        new ViewProfileInteractor(dao, feed, presenter).execute(req);
+
+        assertEquals("ericsson", out[0].getUserName());
+        assertEquals(1_000.0, out[0].getCashBalance());
+        assertEquals(2_500.0, out[0].getTotalEquity());
 
         ViewProfileResponseModel.Holding h = out[0].getHoldings().get(0);
+        assertEquals("AAPL", h.getTicker());
+        assertEquals(10, h.getShares());
+        assertEquals(100.0, h.getAveragePrice());
+        assertEquals(150.0, h.getCurrentPrice());
         assertEquals(1_500.0, h.getMarketValue());
         assertEquals(500.0, h.getUnrealizedPnL());
-        assertEquals(2_500.0, out[0].getTotalEquity()); // 1000 cash + 1500 holdings
     }
 
     @Test

@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RemoveFromWatchlistInteractorTest {
+class RemoveFromWatchlistInteractorTest {
 
     private static final class FakePresenter implements RemoveFromWatchlistOutputBoundary {
         RemoveFromWatchlistResponseModel successResponse;
@@ -51,15 +51,21 @@ public class RemoveFromWatchlistInteractorTest {
         RemoveFromWatchlistInteractor interactor =
                 new RemoveFromWatchlistInteractor(accountDAO, liveQuoteDataAccess, presenter);
 
-        interactor.execute(new RemoveFromWatchlistRequestModel("wayne", "aapl"));
+        RemoveFromWatchlistRequestModel req = new RemoveFromWatchlistRequestModel("wayne", "aapl");
+        assertEquals("wayne", req.getAccountId());
+        assertEquals("aapl", req.getTicker());
+
+        interactor.execute(req);
 
         assertNull(presenter.failureMessage);
         assertFalse(account.getWatchlist().contains("AAPL"));
         assertEquals("AAPL", liveQuoteDataAccess.unsubscribedTicker);
+        assertEquals("AAPL", presenter.successResponse.getTicker());
+        assertTrue(presenter.successResponse.getWatchlistTickers().isEmpty());
     }
 
     @Test
-    void reportsFailureWhenTickerNotOnWatchlist() {
+    void reportsFailureWhenTickerNotOnWatchlistOrAccountMissing() {
         InMemoryAccountDAO accountDAO = new InMemoryAccountDAO();
         accountDAO.save(new Account("wayne", 100_000.0));
         FakePresenter presenter = new FakePresenter();
@@ -70,5 +76,9 @@ public class RemoveFromWatchlistInteractorTest {
 
         assertNull(presenter.successResponse);
         assertTrue(presenter.failureMessage.contains("not on watchlist"));
+
+        presenter.failureMessage = null;
+        interactor.execute(new RemoveFromWatchlistRequestModel("ghost", "AAPL"));
+        assertEquals("Account not found.", presenter.failureMessage);
     }
 }

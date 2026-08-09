@@ -12,7 +12,7 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ViewPositionsInteractorTest {
+class ViewPositionsInteractorTest {
 
     private static final class FakePresenter implements ViewPositionsOutputBoundary {
         ViewPositionsResponseModel successResponse;
@@ -46,12 +46,34 @@ public class ViewPositionsInteractorTest {
         ViewPositionsInteractor interactor =
                 new ViewPositionsInteractor(accountDAO, new FakeQuoteDataAccess(), presenter);
 
-        interactor.execute(new ViewPositionsRequestModel("wayne"));
+        ViewPositionsRequestModel req = new ViewPositionsRequestModel("wayne");
+        assertEquals("wayne", req.getAccountId());
+
+        interactor.execute(req);
 
         PositionView view = presenter.successResponse.getPositions().get(0);
         assertEquals("AAPL", view.getTicker());
+        assertEquals(10, view.getShares());
+        assertEquals(200.0, view.getAverageCost());
         assertEquals(250.0, view.getCurrentPrice());
         assertEquals(500.0, view.getUnrealizedPnL());
+    }
+
+    @Test
+    void fallsBackToAverageCostWhenQuoteIsNull() {
+        InMemoryAccountDAO accountDAO = new InMemoryAccountDAO();
+        Account account = new Account("wayne", 100_000.0);
+        account.addPosition(new Position("AAPL", 10, 200.0));
+        accountDAO.save(account);
+        FakePresenter presenter = new FakePresenter();
+        ViewPositionsInteractor interactor =
+                new ViewPositionsInteractor(accountDAO, ticker -> null, presenter);
+
+        interactor.execute(new ViewPositionsRequestModel("wayne"));
+
+        PositionView view = presenter.successResponse.getPositions().get(0);
+        assertEquals(200.0, view.getCurrentPrice());
+        assertEquals(0.0, view.getUnrealizedPnL());
     }
 
     @Test

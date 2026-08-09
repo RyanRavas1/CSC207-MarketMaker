@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SearchTickerInteractorTest {
+class SearchTickerInteractorTest {
 
     private static final class FakePresenter implements SearchTickerOutputBoundary {
         SearchTickerResponseModel successResponse;
@@ -46,6 +46,7 @@ public class SearchTickerInteractorTest {
         assertNull(presenter.failureMessage);
         assertEquals("AAPL", presenter.successResponse.getTicker());
         assertEquals(232.50, presenter.successResponse.getPrice());
+        assertEquals(Instant.EPOCH, presenter.successResponse.getTimestamp());
     }
 
     @Test
@@ -60,13 +61,17 @@ public class SearchTickerInteractorTest {
     }
 
     @Test
-    void reportsFailureForBlankTicker() {
+    void reportsFailureForNullOrBlankTicker() {
         FakePresenter presenter = new FakePresenter();
         SearchTickerInteractor interactor = new SearchTickerInteractor(new FakeTickerDataAccess(), presenter);
 
-        interactor.execute(new SearchTickerRequestModel("  "));
+        SearchTickerRequestModel blankRequest = new SearchTickerRequestModel("  ");
+        assertEquals("  ", blankRequest.getTicker());
+        interactor.execute(blankRequest);
+        assertTrue(presenter.failureMessage.contains("Enter a ticker"));
 
-        assertNull(presenter.successResponse);
+        presenter.failureMessage = null;
+        interactor.execute(new SearchTickerRequestModel(null));
         assertTrue(presenter.failureMessage.contains("Enter a ticker"));
     }
 }
