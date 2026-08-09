@@ -31,11 +31,11 @@ import com.marketmaker.use_case.view_candlestick_chart.Resolution;
  * <p>The cache is what makes this usable at all: a free key allows 25 requests a day and the
  * dashboard refreshes every ten seconds, which would exhaust the quota in four minutes.
  * Holding each ticker for an hour keeps a whole session inside a handful of requests, and
- * costs nothing in freshness — the series only gains a point once a day.
+ * costs nothing in freshness - the series only gains a point once a day.
  *
  * <p>Failures are cached too, for a shorter spell. A ticker that fails is usually failing
  * because the quota is gone, and retrying it every refresh spends the little that is left on
- * finding out it is still gone. Failures stay in memory only — a restart should clear the
+ * finding out it is still gone. Failures stay in memory only - a restart should clear the
  * belief that the quota is gone, since it may well have rolled over.
  *
  * <p>Successes also go to disk, so a restart costs nothing. See {@link CandleFileCache}.
@@ -165,7 +165,7 @@ public class AlphaVantageHistoricalDataAccessObject implements HistoricalDataAcc
             // the user somewhere different: one is "wait", the other is "check what you typed".
             if (information.contains("rate limit") || information.contains("premium")) {
                 throw new HistoricalDataUnavailableException(
-                        "Daily price-history limit reached — charts resume tomorrow.");
+                        "Daily price-history limit reached - charts resume tomorrow.");
             }
             return List.of();
         }

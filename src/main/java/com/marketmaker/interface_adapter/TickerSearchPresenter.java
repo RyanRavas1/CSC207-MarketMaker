@@ -7,7 +7,7 @@ import com.marketmaker.use_case.search_ticker.SearchTickerResponseModel;
  * Reports whether a symbol is real, and says so on screen when it isn't.
  *
  * <p>Remembers the answer as well as publishing it, because the caller is a controller
- * deciding whether to go on and add the ticker — a decision it has to make before returning.
+ * deciding whether to go on and add the ticker - a decision it has to make before returning.
  */
 public class TickerSearchPresenter implements SearchTickerOutputBoundary {
     // Only the error channel is used, so the state type is nobody's business here.

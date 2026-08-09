@@ -57,7 +57,7 @@ class ViewPortfolioSummaryInteractorTest {
         assertEquals(90_000.0, response.getBuyingPower());
         assertEquals(92_500.0, response.getTotalEquity());
         // The first valuation of the day is the mark the rest of the day is measured against,
-        // so it reads zero — not the 500 this holding has gained since it was bought.
+        // so it reads zero - not the 500 this holding has gained since it was bought.
         assertEquals(0.0, response.getDailyPnL());
     }
 

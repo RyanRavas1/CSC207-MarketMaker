@@ -1,4 +1,4 @@
-# MarketMaker — 5-Minute Demo Run Sheet
+# MarketMaker - 5-Minute Demo Run Sheet
 
 **Slot: Monday August 10, 1:00–1:30 PM.**
 

@@ -38,7 +38,7 @@ public class ViewCandlestickChartInteractor implements ViewCandlestickChartInput
 
         if (candles == null || candles.isEmpty()) {
             presenter.presentFailure("No price history for " + ticker.toUpperCase()
-                    + " — check the symbol.");
+                    + " - check the symbol.");
             return;
         }
 

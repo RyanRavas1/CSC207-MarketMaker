@@ -19,7 +19,7 @@ public class BuyingPowerTest {
 
         assertEquals(3_000.0, account.reservedForOpenBuys());
         assertEquals(7_000.0, account.buyingPower());
-        // Cash itself hasn't moved — the money leaves only when the order fills.
+        // Cash itself hasn't moved - the money leaves only when the order fills.
         assertEquals(10_000.0, account.getUserBalance());
     }
 
