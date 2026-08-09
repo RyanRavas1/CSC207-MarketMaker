@@ -172,6 +172,8 @@ public class ChartPanel extends TitledPanel {
 
     private JButton intervalButton(String text, Resolution resolution) {
         JButton button = ViewComponents.button(text);
+        button.getAccessibleContext().setAccessibleName("Chart span " + text);
+        button.setToolTipText("Show the last " + text.replace("1W", "week").replace("1M", "month"));
         button.addActionListener(event -> controller.showInterval(resolution));
         return button;
     }

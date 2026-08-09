@@ -5,6 +5,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Insets;
 import java.awt.Color;
+import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -43,7 +44,7 @@ public class WatchlistPanel extends TitledPanel {
     private final JLabel updated = new JLabel();
     private final JLabel live = new JLabel("NO DATA");
     private final JLabel dot = ViewComponents.statusDot(UiTheme.TEXT_MUTED);
-    private final JTable table = Tables.create(model);
+    private final JTable table = Tables.create(model, "Watchlist quotes");
     private final JTextField symbolField = new JTextField();
     private final WatchlistController controller;
     private String charted;
@@ -124,6 +125,8 @@ public class WatchlistPanel extends TitledPanel {
         symbolField.setFont(UiTheme.BASE);
 
         JButton add = smallButton("Add");
+        add.setMnemonic(KeyEvent.VK_A);
+        add.setToolTipText("Add the typed symbol to the watchlist (Alt+A)");
         add.addActionListener(event -> {
             controller.add(symbolField.getText());
             symbolField.setText("");
@@ -132,6 +135,8 @@ public class WatchlistPanel extends TitledPanel {
         // Removing goes by the typed symbol when there is one, so a ticker that never got a
         // row — because it could not be quoted — can still be taken off the list.
         JButton remove = smallButton("Remove");
+        remove.setMnemonic(KeyEvent.VK_M);
+        remove.setToolTipText("Stop watching the selected symbol (Alt+M)");
         remove.addActionListener(event -> {
             String typed = symbolField.getText().trim();
             controller.remove(typed.isEmpty() ? selectedTicker() : typed);

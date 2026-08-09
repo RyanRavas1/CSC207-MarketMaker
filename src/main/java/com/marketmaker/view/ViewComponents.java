@@ -4,14 +4,17 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Insets;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 
 // Helpers for making the labels and buttons the panels are built from, so the
 // styling doesn't get repeated everywhere.
-public class ViewComponents {
+public final class ViewComponents {
+
+    private ViewComponents() {
+    }
+
 
     public static JLabel label(String text, Font font, Color colour, int align) {
         JLabel label = new JLabel(text);
@@ -29,7 +32,9 @@ public class ViewComponents {
         JButton button = new JButton(text);
         button.setFont(UiTheme.BASE);
         button.setMargin(new Insets(2, 10, 2, 10));
-        button.setFocusable(false);
+        // Focusable on purpose: setFocusable(false) took every button out of the Tab
+        // order, which left the dashboard unusable without a mouse.
+        button.setFocusable(true);
         return button;
     }
 

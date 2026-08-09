@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 import java.util.List;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.event.KeyEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -44,7 +45,7 @@ public class OrderTicketPanel extends TitledPanel {
     private final JRadioButton limit = radio("Limit", false);
     private final JRadioButton stop = radio("Stop", false);
 
-    private final JButton place = new JButton("Place Buy Order");
+    private final JButton place = placeButton();
     private final OrderTicketController controller;
 
     private double availableCash;
@@ -234,6 +235,9 @@ public class OrderTicketPanel extends TitledPanel {
         label.setFont(UiTheme.BASE);
         label.setForeground(UiTheme.TEXT);
         label.setPreferredSize(new Dimension(90, 26));
+        // Binds the caption to the field it describes. Without this a screen reader
+        // announces the field as an unnamed text box, however close the label sits.
+        label.setLabelFor(control);
 
         row.add(label, BorderLayout.WEST);
         row.add(control, BorderLayout.CENTER);
@@ -247,6 +251,14 @@ public class OrderTicketPanel extends TitledPanel {
             row.add(b);
         }
         return row;
+    }
+
+    /** The ticket's primary action, reachable as Alt+P. */
+    private static JButton placeButton() {
+        JButton button = new JButton("Place Buy Order");
+        button.setMnemonic(KeyEvent.VK_P);
+        button.setToolTipText("Submit this order ticket (Alt+P)");
+        return button;
     }
 
     private JRadioButton radio(String text, boolean selected) {

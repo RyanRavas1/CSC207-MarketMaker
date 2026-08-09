@@ -60,7 +60,7 @@ public class OrderHistoryPanel extends TitledPanel {
         super("Order & Trade History");
         setPreferredSize(new Dimension(1440, 206));
 
-        JTable orders = Tables.create(orderModel);
+        JTable orders = Tables.create(orderModel, "Order history");
         orderSorter = new TableRowSorter<>(orderModel);
         orders.setRowSorter(orderSorter);
         wireCancel(orders, cancelController);
@@ -68,7 +68,7 @@ public class OrderHistoryPanel extends TitledPanel {
         JTabbedPane tabs = new JTabbedPane();
         tabs.setFont(UiTheme.BASE);
         tabs.addTab("Orders", Tables.scroll(orders));
-        tabs.addTab("Trades", Tables.scroll(Tables.create(tradeModel)));
+        tabs.addTab("Trades", Tables.scroll(Tables.create(tradeModel, "Trade history")));
 
         getContent().add(buildFilterRow(), BorderLayout.NORTH);
         getContent().add(tabs, BorderLayout.CENTER);

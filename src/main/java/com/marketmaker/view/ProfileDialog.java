@@ -66,7 +66,7 @@ public class ProfileDialog extends JDialog {
         JPanel body = new JPanel(new BorderLayout());
         body.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         body.add(header, BorderLayout.NORTH);
-        body.add(Tables.scroll(Tables.create(model)), BorderLayout.CENTER);
+        body.add(Tables.scroll(Tables.create(model, "Account holdings")), BorderLayout.CENTER);
         body.add(message, BorderLayout.SOUTH);
 
         add(body, BorderLayout.CENTER);

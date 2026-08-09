@@ -3,6 +3,7 @@ package com.marketmaker.view;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.KeyEvent;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -124,13 +125,14 @@ public class DashboardFrame extends JFrame {
         actions.setOpaque(false);
         // Buy and Sell are shortcuts into the ticket, which is where an order is actually
         // built — they set the side rather than placing anything on their own.
-        JButton buy = ViewComponents.button("Buy");
+        JButton buy = mnemonic(ViewComponents.button("Buy"), KeyEvent.VK_B, "Buy the selected symbol (Alt+B)");
         buy.addActionListener(event -> ticket.chooseSide(true));
-        JButton sell = ViewComponents.button("Sell");
+        JButton sell = mnemonic(ViewComponents.button("Sell"), KeyEvent.VK_S, "Sell the selected symbol (Alt+S)");
         sell.addActionListener(event -> ticket.chooseSide(false));
-        JButton refresh = ViewComponents.button("Refresh");
+        JButton refresh = mnemonic(ViewComponents.button("Refresh"), KeyEvent.VK_R, "Re-quote everything now (Alt+R)");
         refresh.addActionListener(event -> onRefresh.run());
-        JButton profileButton = ViewComponents.button("Profile");
+        JButton profileButton = mnemonic(ViewComponents.button("Profile"), KeyEvent.VK_F,
+                "Open the account profile (Alt+F)");
         profileButton.addActionListener(event -> profileDialog.open());
         actions.add(buy);
         actions.add(sell);
@@ -175,5 +177,12 @@ public class DashboardFrame extends JFrame {
         column.add(ticket, BorderLayout.NORTH);
         column.add(new PositionsPanel(positions), BorderLayout.CENTER);
         return column;
+    }
+
+    /** Gives a toolbar button a keyboard route and says what the shortcut is. */
+    private static JButton mnemonic(JButton button, int key, String tip) {
+        button.setMnemonic(key);
+        button.setToolTipText(tip);
+        return button;
     }
 }
