@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ViewOrderHistoryInteractorTest {
 
-    private static class FakePresenter implements ViewOrderHistoryOutputBoundary {
+    private static final class FakePresenter implements ViewOrderHistoryOutputBoundary {
         ViewOrderHistoryResponseModel successResponse;
         String failureMessage;
 

@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReceiveLiveQuoteUpdatesInteractorTest {
 
-    private static class FakeLiveQuoteDataAccess implements LiveQuoteDataAccessInterface {
+    private static final class FakeLiveQuoteDataAccess implements LiveQuoteDataAccessInterface {
         String subscribedTicker;
         QuoteUpdateListener subscribedListener;
         List<String> unsubscribedTickers = new ArrayList<>();
@@ -29,7 +29,7 @@ public class ReceiveLiveQuoteUpdatesInteractorTest {
         }
     }
 
-    private static class FakePresenter implements ReceiveLiveQuoteUpdatesOutputBoundary {
+    private static final class FakePresenter implements ReceiveLiveQuoteUpdatesOutputBoundary {
         final List<LiveQuoteResponseModel> updates = new ArrayList<>();
 
         @Override

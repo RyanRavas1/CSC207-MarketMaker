@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ViewPortfolioSummaryInteractorTest {
 
-    private static class FakePresenter implements ViewPortfolioSummaryOutputBoundary {
+    private static final class FakePresenter implements ViewPortfolioSummaryOutputBoundary {
         ViewPortfolioSummaryResponseModel successResponse;
         String failureMessage;
 
@@ -30,7 +30,7 @@ public class ViewPortfolioSummaryInteractorTest {
         }
     }
 
-    private static class FakeQuoteDataAccess implements TickerDataAccessInterface {
+    private static final class FakeQuoteDataAccess implements TickerDataAccessInterface {
         @Override
         public Quote fetchQuote(String ticker) {
             return new Quote(ticker, 250.0, Instant.EPOCH);

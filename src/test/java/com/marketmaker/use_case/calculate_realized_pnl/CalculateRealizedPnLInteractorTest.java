@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CalculateRealizedPnLInteractorTest {
 
-    private static class FakePresenter implements CalculateRealizedPnLOutputBoundary {
+    private static final class FakePresenter implements CalculateRealizedPnLOutputBoundary {
         CalculateRealizedPnLResponseModel successResponse;
         String failureMessage;
 

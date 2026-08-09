@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CancelOrderInteractorTest {
 
-    private static class FakePresenter implements CancelOrderOutputBoundary {
+    private static final class FakePresenter implements CancelOrderOutputBoundary {
         CancelOrderResponseModel successResponse;
         String failureMessage;
 

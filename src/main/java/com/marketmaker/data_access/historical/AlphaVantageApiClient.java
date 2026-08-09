@@ -39,7 +39,8 @@ public class AlphaVantageApiClient {
 
     // Matches one Alpha Vantage intraday entry,
     // Example entry:
-    // "2024-03-01 14:35:00": {"1. open":"180.50","2. high":"180.63","3. low":"180.45", "4. close":"180.58","5. volume":"15000"}
+    // "2024-03-01 14:35:00": {"1. open":"180.50","2. high":"180.63","3. low":"180.45",
+    //                         "4. close":"180.58","5. volume":"15000"}
     private static final Pattern ENTRY_PATTERN = Pattern.compile(
             "\"(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})\"\\s*:\\s*\\{"
                     + "\\s*\"1\\. open\"\\s*:\\s*\"([\\d.]+)\"\\s*,\\s*"
@@ -134,7 +135,8 @@ public class AlphaVantageApiClient {
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
             if (response.statusCode() != 200) {
-                throw new StockDataException("HTTP " + response.statusCode() + " from Alpha Vantage for ticker " + ticker);
+                throw new StockDataException(
+                        "HTTP " + response.statusCode() + " from Alpha Vantage for ticker " + ticker);
             }
             return response.body();
         } catch (IOException | InterruptedException e) {

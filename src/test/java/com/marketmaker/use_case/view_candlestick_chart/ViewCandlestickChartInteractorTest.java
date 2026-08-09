@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ViewCandlestickChartInteractorTest {
 
-    private static class FakePresenter implements ViewCandlestickChartOutputBoundary {
+    private static final class FakePresenter implements ViewCandlestickChartOutputBoundary {
         ViewCandlestickChartResponseModel successResponse;
         String failureMessage;
 
@@ -27,7 +27,7 @@ public class ViewCandlestickChartInteractorTest {
         }
     }
 
-    private static class FakeHistoricalDataAccess implements HistoricalDataAccessInterface {
+    private static final class FakeHistoricalDataAccess implements HistoricalDataAccessInterface {
         Resolution requestedResolution;
 
         @Override
@@ -36,7 +36,8 @@ public class ViewCandlestickChartInteractorTest {
             if (!ticker.equals("AAPL")) {
                 return List.of();
             }
-            return List.of(new Candle("AAPL", "D", 230.0, 235.0, 228.0, 232.5, 1000.0, LocalDateTime.of(2026, 8, 6, 0, 0)));
+            return List.of(new Candle("AAPL", "D", 230.0, 235.0, 228.0, 232.5, 1000.0,
+                    LocalDateTime.of(2026, 8, 6, 0, 0)));
         }
     }
 

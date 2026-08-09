@@ -1,7 +1,6 @@
 package com.marketmaker;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +85,11 @@ import com.marketmaker.use_case.view_positions.ViewPositionsResponseModel;
 import com.marketmaker.view.DashboardFrame;
 
 /** Builds the object graph and keeps the dashboard fed with live data. */
-public class Main {
+public final class Main {
+
+    private Main() {
+    }
+
     private static final String DATA_DIRECTORY = "data";
     private static final String ACCOUNT_ID = "demo";
     private static final String CHART_TICKER = "AAPL";

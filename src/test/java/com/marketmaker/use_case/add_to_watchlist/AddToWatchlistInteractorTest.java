@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AddToWatchlistInteractorTest {
 
-    private static class FakePresenter implements AddToWatchlistOutputBoundary {
+    private static final class FakePresenter implements AddToWatchlistOutputBoundary {
         AddToWatchlistResponseModel successResponse;
         String failureMessage;
 
@@ -27,7 +27,7 @@ public class AddToWatchlistInteractorTest {
         }
     }
 
-    private static class FakeLiveQuoteDataAccess implements LiveQuoteDataAccessInterface {
+    private static final class FakeLiveQuoteDataAccess implements LiveQuoteDataAccessInterface {
         String subscribedTicker;
 
         @Override

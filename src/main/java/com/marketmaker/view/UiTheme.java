@@ -4,7 +4,11 @@ import java.awt.Color;
 import java.awt.Font;
 
 // Colours and fonts used across the dashboard, based on the mockup.
-public class UiTheme {
+public final class UiTheme {
+
+    private UiTheme() {
+    }
+
 
     public static final Color GREEN = new Color(0x13, 0x73, 0x33);
     public static final Color RED = new Color(0xC4, 0x2B, 0x1C);
