@@ -1,5 +1,7 @@
 package com.marketmaker.interface_adapter;
 
+import java.util.concurrent.Executor;
+
 import com.marketmaker.entities.Order;
 import com.marketmaker.use_case.place_limit_stop_order.PlaceLimitStopOrderInputBoundary;
 import com.marketmaker.use_case.place_limit_stop_order.PlaceLimitStopOrderRequestModel;
@@ -14,13 +16,15 @@ import com.marketmaker.use_case.place_order.PlaceOrderRequestModel;
 public class OrderTicketController {
     private final PlaceOrderInputBoundary marketInteractor;
     private final PlaceLimitStopOrderInputBoundary restingInteractor;
+    private final Executor worker;
     private final String accountId;
 
     public OrderTicketController(PlaceOrderInputBoundary marketInteractor,
                                  PlaceLimitStopOrderInputBoundary restingInteractor,
-                                 String accountId) {
+                                 Executor worker, String accountId) {
         this.marketInteractor = marketInteractor;
         this.restingInteractor = restingInteractor;
+        this.worker = worker;
         this.accountId = accountId;
     }
 
@@ -62,12 +66,19 @@ public class OrderTicketController {
         }
 
         // Past this point the ticket is known to be readable, so exactly one dispatch runs.
-        if (resting) {
-            restingInteractor.execute(new PlaceLimitStopOrderRequestModel(
-                    accountId, symbol, side, type, quantity, trigger));
-        } else {
-            marketInteractor.execute(new PlaceOrderRequestModel(accountId, symbol, side, quantity));
-        }
+        // Reading the ticket stays on the calling thread because the caller wants the reason
+        // back; placing the order does not, because it writes the account. Everything that
+        // writes the account runs on the one worker - see WatchlistController - so a save can
+        // never carry a copy of the account taken before somebody else's save.
+        final double triggerPrice = trigger;
+        worker.execute(() -> {
+            if (resting) {
+                restingInteractor.execute(new PlaceLimitStopOrderRequestModel(
+                        accountId, symbol, side, type, quantity, triggerPrice));
+            } else {
+                marketInteractor.execute(new PlaceOrderRequestModel(accountId, symbol, side, quantity));
+            }
+        });
         return null;
     }
 }
