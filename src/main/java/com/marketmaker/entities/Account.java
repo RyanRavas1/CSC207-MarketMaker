@@ -64,7 +64,7 @@ public class Account {
 
     /**
      * Swaps one holding for its updated self, or drops it when {@code updated} is null.
-     * Position is immutable, so "changing" a holding means replacing the object — in place,
+     * Position is immutable, so "changing" a holding means replacing the object - in place,
      * because remove-then-add would shuffle the row to the bottom of every portfolio table.
      */
     public void replacePosition(Position target, Position updated) {

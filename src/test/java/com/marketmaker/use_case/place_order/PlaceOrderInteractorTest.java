@@ -5,8 +5,8 @@ import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Order;
 import com.marketmaker.entities.Position;
 import com.marketmaker.entities.Quote;
-import com.marketmaker.price_feed.PriceFeed;
-import com.marketmaker.price_feed.PriceFeedException;
+import com.marketmaker.use_case.PriceFeed;
+import com.marketmaker.use_case.PriceFeedException;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

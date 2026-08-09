@@ -2,7 +2,7 @@ package com.marketmaker.use_case.view_portfolio_summary;
 
 import java.time.LocalDate;
 
-import com.marketmaker.data_access.AccountDAO;
+import com.marketmaker.use_case.AccountDAO;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Position;
 import com.marketmaker.entities.Quote;
@@ -44,7 +44,7 @@ public class ViewPortfolioSummaryInteractor implements ViewPortfolioSummaryInput
         double dailyPnL = account.dailyPnL(LocalDate.now(), totalEquity);
         // The first valuation of the day sets that mark, which has to outlive the process.
         accountDAO.save(account);
-        // No margin is modeled, so buying power is cash — less whatever resting buy orders
+        // No margin is modeled, so buying power is cash - less whatever resting buy orders
         // have already committed, which is money the user cannot spend twice.
         double buyingPower = account.buyingPower();
 

@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.KeyEvent;
-import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -14,7 +13,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import com.marketmaker.entities.Quote;
+import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
 import com.marketmaker.interface_adapter.CancelOrderController;
 import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.ProfileController;
@@ -41,7 +40,7 @@ public class DashboardFrame extends JFrame {
     private final ViewModel<ViewPositionsResponseModel> positions;
     private final ViewModel<ViewOrderHistoryResponseModel> orderHistory;
     private final ViewModel<ViewCandlestickChartResponseModel> chart;
-    private final ViewModel<List<Quote>> watchlist;
+    private final ViewModel<WatchlistResponseModel> watchlist;
     private final OrderTicketPanel ticket;
     private final OrderHistoryPanel history;
     private final ProfileDialog profileDialog;
@@ -68,8 +67,8 @@ public class DashboardFrame extends JFrame {
                           ViewModel<ViewPositionsResponseModel> positions,
                           ViewModel<ViewOrderHistoryResponseModel> orderHistory,
                           ViewModel<ViewCandlestickChartResponseModel> chart,
-                          ViewModel<List<Quote>> watchlist) {
-        super("MarketMaker — Paper Trading Simulator");
+                          ViewModel<WatchlistResponseModel> watchlist) {
+        super("MarketMaker - Paper Trading Simulator");
         this.summary = summary;
         this.positions = positions;
         this.orderHistory = orderHistory;
@@ -80,13 +79,14 @@ public class DashboardFrame extends JFrame {
         this.chartController = chartController;
         this.onRefresh = onRefresh;
         this.onLiveToggle = onLiveToggle;
-        this.ticket = new OrderTicketPanel(summary, status, ticketController, realizedPnLController);
+        this.ticket = new OrderTicketPanel(summary, status, watchlist,
+                ticketController, realizedPnLController);
         this.history = new OrderHistoryPanel(orderHistory, status, cancelController);
         this.profileDialog = new ProfileDialog(this, profile, profileController);
         // The watchlist is the only thing that talks to the feed every tick, so its outcome
         // is what the status light knows about.
-        watchlist.onState(quotes -> setFeedStatus(UiTheme.GREEN, "Finnhub connected", null));
-        watchlist.onError(problem -> setFeedStatus(UiTheme.AMBER, "Finnhub — no prices", problem));
+        watchlist.onState(watched -> setFeedStatus(UiTheme.GREEN, "Finnhub connected", null));
+        watchlist.onError(problem -> setFeedStatus(UiTheme.AMBER, "Finnhub - no prices", problem));
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1440, 940);
@@ -124,7 +124,7 @@ public class DashboardFrame extends JFrame {
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         actions.setOpaque(false);
         // Buy and Sell are shortcuts into the ticket, which is where an order is actually
-        // built — they set the side rather than placing anything on their own.
+        // built - they set the side rather than placing anything on their own.
         JButton buy = mnemonic(ViewComponents.button("Buy"), KeyEvent.VK_B, "Buy the selected symbol (Alt+B)");
         buy.addActionListener(event -> ticket.chooseSide(true));
         JButton sell = mnemonic(ViewComponents.button("Sell"), KeyEvent.VK_S, "Sell the selected symbol (Alt+S)");

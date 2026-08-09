@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Map;
 
 import com.marketmaker.entities.Quote;
+import com.marketmaker.use_case.PriceFeed;
 
 /** Fake price feed used when the real market or Finnhub isn't available. */
 public class ReplayPriceFeed implements PriceFeed {

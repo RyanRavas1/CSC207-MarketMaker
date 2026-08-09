@@ -2,7 +2,7 @@ package com.marketmaker.view;
 
 import com.marketmaker.entities.Candle;
 import com.marketmaker.entities.Order;
-import com.marketmaker.entities.Quote;
+import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.use_case.view_candlestick_chart.Resolution;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.marketmaker.interface_adapter.Format;
 
 /**
  * Builds each panel and checks it reflects what the view model publishes. Controllers are
@@ -51,7 +52,7 @@ class PanelsHeadlessTest {
             ViewModel<ViewPortfolioSummaryResponseModel> summary = new ViewModel<>();
             ViewModel<String> status = new ViewModel<>();
             summaryBarRef.set(new AccountSummaryBar(summary));
-            ticketRef.set(new OrderTicketPanel(summary, status, null, null));
+            ticketRef.set(new OrderTicketPanel(summary, status, new ViewModel<>(), null, null));
             summary.setState(new ViewPortfolioSummaryResponseModel(1, 2, 3, -4));
 
             ViewModel<ViewPositionsResponseModel> positions = new ViewModel<>();
@@ -59,9 +60,10 @@ class PanelsHeadlessTest {
             positions.setState(new ViewPositionsResponseModel(
                     List.of(new PositionView("AAPL", 2, 10, 12, 4))));
 
-            ViewModel<List<Quote>> watchlist = new ViewModel<>();
+            ViewModel<WatchlistResponseModel> watchlist = new ViewModel<>();
             watchlistRef.set(new WatchlistPanel(watchlist, null, null));
-            watchlist.setState(List.of(new Quote("AAPL", 12, Instant.EPOCH)));
+            watchlist.setState(new WatchlistResponseModel(
+                    List.of(new WatchlistResponseModel.Row("AAPL", 12.0, Instant.EPOCH)), List.of()));
 
             ViewModel<ViewCandlestickChartResponseModel> chart = new ViewModel<>();
             chartRef.set(new ChartPanel(chart, null));

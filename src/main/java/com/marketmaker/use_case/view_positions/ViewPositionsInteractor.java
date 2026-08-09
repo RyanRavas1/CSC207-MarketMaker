@@ -3,7 +3,7 @@ package com.marketmaker.use_case.view_positions;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.marketmaker.data_access.AccountDAO;
+import com.marketmaker.use_case.AccountDAO;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Position;
 import com.marketmaker.entities.Quote;

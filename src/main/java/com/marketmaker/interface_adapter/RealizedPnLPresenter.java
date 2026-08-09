@@ -2,13 +2,12 @@ package com.marketmaker.interface_adapter;
 
 import com.marketmaker.use_case.calculate_realized_pnl.CalculateRealizedPnLOutputBoundary;
 import com.marketmaker.use_case.calculate_realized_pnl.CalculateRealizedPnLResponseModel;
-import com.marketmaker.view.Format;
 
 /**
  * Turns a realized profit or loss into the line shown under the order ticket.
  *
  * <p>Holds the message rather than publishing it, because this answers a question the form
- * asks while the user is still typing — there is no other screen waiting on it.
+ * asks while the user is still typing - there is no other screen waiting on it.
  */
 public class RealizedPnLPresenter implements CalculateRealizedPnLOutputBoundary {
     private String message;

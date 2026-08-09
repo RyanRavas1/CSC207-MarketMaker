@@ -16,7 +16,7 @@ import javax.swing.plaf.metal.MetalLookAndFeel;
 
 import com.marketmaker.config.EnvLoader;
 import com.marketmaker.config.exceptions.MissingEnvironmentVariableException;
-import com.marketmaker.data_access.AccountDAO;
+import com.marketmaker.use_case.AccountDAO;
 import com.marketmaker.data_access.FinnhubApiClient;
 import com.marketmaker.data_access.JsonFileAccountDataAccessObject;
 import com.marketmaker.data_access.PolledQuoteSubscription;
@@ -37,12 +37,11 @@ import com.marketmaker.interface_adapter.ProfileController;
 import com.marketmaker.interface_adapter.ProfilePresenter;
 import com.marketmaker.interface_adapter.RealizedPnLController;
 import com.marketmaker.interface_adapter.RealizedPnLPresenter;
-import com.marketmaker.interface_adapter.TickerSearchPresenter;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.interface_adapter.WatchlistController;
 import com.marketmaker.interface_adapter.WatchlistPresenter;
 import com.marketmaker.price_feed.FinnhubPriceFeed;
-import com.marketmaker.price_feed.PriceFeed;
+import com.marketmaker.use_case.PriceFeed;
 import com.marketmaker.price_feed.ReplayPriceFeed;
 import com.marketmaker.use_case.add_to_watchlist.AddToWatchlistInteractor;
 import com.marketmaker.use_case.add_to_watchlist.AddToWatchlistOutputBoundary;
@@ -63,11 +62,11 @@ import com.marketmaker.use_case.receive_live_quotes.ReceiveLiveQuoteUpdatesInter
 import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistInteractor;
 import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistOutputBoundary;
 import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistResponseModel;
-import com.marketmaker.use_case.search_ticker.SearchTickerInteractor;
 import com.marketmaker.use_case.search_ticker.TickerDataAccessInterface;
 import com.marketmaker.use_case.user_profile.ViewProfileInteractor;
 import com.marketmaker.use_case.user_profile.ViewProfileResponseModel;
 import com.marketmaker.use_case.watchlist.WatchlistInteractor;
+import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
 import com.marketmaker.use_case.watchlist.WatchlistRequestModel;
 import com.marketmaker.use_case.view_candlestick_chart.HistoricalDataAccessInterface;
 import com.marketmaker.use_case.view_candlestick_chart.Resolution;
@@ -130,7 +129,7 @@ public final class Main {
             ViewModel<ViewPositionsResponseModel> positions = new ViewModel<>();
             ViewModel<ViewOrderHistoryResponseModel> orderHistory = new ViewModel<>();
             ViewModel<ViewCandlestickChartResponseModel> chart = new ViewModel<>();
-            ViewModel<List<Quote>> watchlist = new ViewModel<>();
+            ViewModel<WatchlistResponseModel> watchlist = new ViewModel<>();
             ViewModel<String> status = new ViewModel<>();
             ViewModel<ViewProfileResponseModel> profile = new ViewModel<>();
 
@@ -152,9 +151,9 @@ public final class Main {
             OrderTicketController ticketController = new OrderTicketController(
                     new PlaceOrderInteractor(accountDAO, priceFeed, feedback),
                     new PlaceLimitStopOrderInteractor(accountDAO, feedback),
-                    ACCOUNT_ID);
+                    WORKER, ACCOUNT_ID);
             CancelOrderController cancelController = new CancelOrderController(
-                    new CancelOrderInteractor(accountDAO, feedback), ACCOUNT_ID);
+                    new CancelOrderInteractor(accountDAO, feedback), WORKER, ACCOUNT_ID);
             RealizedPnLPresenter realizedPnLPresenter = new RealizedPnLPresenter();
             RealizedPnLController realizedPnLController = new RealizedPnLController(
                     new CalculateRealizedPnLInteractor(accountDAO, realizedPnLPresenter),
@@ -168,13 +167,9 @@ public final class Main {
             // use case in the path means a websocket adapter is a swap, not a rewrite.
             ReceiveLiveQuoteUpdatesInteractor liveQuotes = new ReceiveLiveQuoteUpdatesInteractor(
                     new PolledQuoteSubscription(), update -> { });
-            // Adds are checked against the market first, so a typo is refused rather than
-            // parked on the watchlist for ever with no price beside it.
-            TickerSearchPresenter search = new TickerSearchPresenter(watchlist);
             WatchlistController watchlistController = new WatchlistController(
                     addToWatchlist(accountDAO), removeFromWatchlist(accountDAO), liveQuotes,
-                    new SearchTickerInteractor(quotes, search), search, WORKER,
-                    ACCOUNT_ID, refresh);
+                    WORKER, ACCOUNT_ID, refresh);
             // A resting order fills off an incoming price, so the quotes drawn on the
             // watchlist are offered to the matcher on their way to the screen.
             WatchlistInteractor watchlistInteractor = new WatchlistInteractor(priceFeed,
@@ -196,7 +191,7 @@ public final class Main {
             // A long watchlist costs more calls per tick, so it has to tick less often. The
             // alternative is a rate limit part-way through a refresh, which shows up as some
             // tickers holding yesterday's price with nothing on screen to say why.
-            watchlist.onState(priced -> timer.setDelay(intervalFor(priced.size())));
+            watchlist.onState(priced -> timer.setDelay(intervalFor(priced.getRows().size())));
             new DashboardFrame(ticketController, watchlistController, chartController,
                     cancelController, realizedPnLController, profileController,
                     status, profile, refresh, live -> toggle(timer, live),
@@ -302,7 +297,7 @@ public final class Main {
             return new AlphaVantageHistoricalDataAccessObject(EnvLoader.get("ALPHAVANTAGE_API_KEY"),
                     new CandleFileCache(Path.of(DATA_DIRECTORY, "candles")));
         } catch (MissingEnvironmentVariableException exception) {
-            LOGGER.info("No ALPHAVANTAGE_API_KEY found — the chart will stay empty. "
+            LOGGER.info("No ALPHAVANTAGE_API_KEY found - the chart will stay empty. "
                     + "Copy src/.env.example to .env and add a key for price history.");
             // Better an empty chart that says so than invented prices beside a live watchlist.
             return (ticker, resolution) -> List.of();
@@ -313,7 +308,7 @@ public final class Main {
         try {
             return new FinnhubPriceFeed(new FinnhubApiClient(EnvLoader.get("FINNHUB_API_KEY")));
         } catch (MissingEnvironmentVariableException exception) {
-            LOGGER.info("No FINNHUB_API_KEY found — using the replay feed. "
+            LOGGER.info("No FINNHUB_API_KEY found - using the replay feed. "
                     + "Copy src/.env.example to .env and add a key for live prices.");
             Map<String, Double> startingPrices = new HashMap<>();
             startingPrices.put("AAPL", 190.0);

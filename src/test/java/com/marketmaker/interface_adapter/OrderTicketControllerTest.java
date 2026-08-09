@@ -29,7 +29,9 @@ class OrderTicketControllerTest {
     void setUp() {
         market = new RecordingMarketInteractor();
         resting = new RecordingRestingInteractor();
-        controller = new OrderTicketController(market, resting, "demo");
+        // Runs the dispatch inline so the assertions still see it: the executor is only there to
+        // keep account writes on one thread, and which thread that is does not matter here.
+        controller = new OrderTicketController(market, resting, Runnable::run, "demo");
     }
 
     @Test

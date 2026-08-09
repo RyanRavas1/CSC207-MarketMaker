@@ -1,8 +1,8 @@
 package com.marketmaker.data_access;
 
 import com.marketmaker.entities.Quote;
-import com.marketmaker.price_feed.PriceFeed;
-import com.marketmaker.price_feed.PriceFeedException;
+import com.marketmaker.use_case.PriceFeed;
+import com.marketmaker.use_case.PriceFeedException;
 import com.marketmaker.use_case.search_ticker.TickerDataAccessInterface;
 
 /**

@@ -10,7 +10,7 @@ import com.marketmaker.data_access.InMemoryAccountDAO;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Position;
 import com.marketmaker.entities.Quote;
-import com.marketmaker.price_feed.PriceFeed;
+import com.marketmaker.use_case.PriceFeed;
 
 class ViewProfileInteractorTest {
 

@@ -81,6 +81,7 @@ public class OrderHistoryPanel extends TitledPanel {
         });
         viewModel.onError(this::showError);
         status.onState(this::showMessage);
+        status.onError(this::showError);
     }
 
     /**
@@ -129,7 +130,7 @@ public class OrderHistoryPanel extends TitledPanel {
 
         message.setFont(UiTheme.BASE_ITALIC);
         message.setForeground(UiTheme.TEXT_LABEL);
-        message.setText("Persisted — restored on relaunch");
+        message.setText("Persisted - restored on relaunch");
 
         row.add(filters, BorderLayout.WEST);
         row.add(message, BorderLayout.EAST);

@@ -16,12 +16,13 @@ import javax.swing.SwingConstants;
 import com.marketmaker.interface_adapter.ProfileController;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.use_case.user_profile.ViewProfileResponseModel;
+import com.marketmaker.interface_adapter.Format;
 
 /**
  * The account at a glance: who it belongs to, what is in it, what it is worth.
  *
  * <p>A dialog rather than a panel because it repeats what the dashboard already shows in
- * pieces — it is worth having on demand, not worth permanent screen space.
+ * pieces - it is worth having on demand, not worth permanent screen space.
  */
 public class ProfileDialog extends JDialog {
 

@@ -1,6 +1,6 @@
 # Code Style Guide
 
-Conventions for CSC207-MarketMaker. Keep it consistent — that matters more than any single rule.
+Conventions for CSC207-MarketMaker. Keep it consistent - that matters more than any single rule.
 
 ## Comments
 
@@ -35,8 +35,8 @@ No stray blank lines inside a block of getters.
 
 ## Naming (Java convention)
 
-- Fields and methods: `camelCase` — `userBalance`, `editBalance()`, not `UserBalance` / `edit_balance`.
-- Classes: `PascalCase` — `Account`, `Order`.
+- Fields and methods: `camelCase` - `userBalance`, `editBalance()`, not `UserBalance` / `edit_balance`.
+- Classes: `PascalCase` - `Account`, `Order`.
 - Constants: `UPPER_SNAKE_CASE`.
 
 ```java
@@ -55,7 +55,7 @@ No trailing blank line before the closing brace. Classes should end:
 
 ## Before you push
 
-- Code compiles (`mvn compile`) — a missing semicolon fails the whole build.
+- Code compiles (`mvn compile`) - a missing semicolon fails the whole build.
 - Tests pass (`mvn test`).
 
-Anyone can propose changes to these standards — raise it and we'll agree together.
+Anyone can propose changes to these standards - raise it and we'll agree together.

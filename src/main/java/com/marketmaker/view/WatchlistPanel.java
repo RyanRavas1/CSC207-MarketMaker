@@ -17,15 +17,17 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 
-import com.marketmaker.entities.Quote;
 import com.marketmaker.interface_adapter.WatchlistController;
 import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.ViewModel;
+import com.marketmaker.interface_adapter.Format;
+import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
 
 /**
  * The tickers being tracked, at their latest quoted price.
  *
- * <p>Bound to {@link Quote} because that is what {@code receive_live_quotes} delivers.
+ * <p>One row per watched ticker, priced or not - the table is a picture of the watchlist,
+ * so a ticker whose quote failed shows a dash rather than vanishing until the next refresh.
  * A percent-change column is deliberately absent: no current response model carries a
  * previous close, and the watchlist contract itself is still contested between PR #7
  * and PR #9. Add the column once one of those lands and exposes it.
@@ -35,12 +37,12 @@ public class WatchlistPanel extends TitledPanel {
     // A quote older than this is the last trade before the close, not a live price.
     private static final Duration STALE_AFTER = Duration.ofMinutes(2);
 
-    private static final List<Column<Quote>> COLUMNS = List.of(
-            Column.of("Symbol", String.class, Quote::getTicker),
-            new Column<>("Last", Double.class, Quote::getPrice, CellStyle.NUMBER),
-            Column.of("Updated", Instant.class, Quote::getTimestamp));
+    private static final List<Column<WatchlistResponseModel.Row>> COLUMNS = List.of(
+            Column.of("Symbol", String.class, WatchlistResponseModel.Row::getTicker),
+            new Column<>("Last", Double.class, WatchlistResponseModel.Row::getPrice, CellStyle.NUMBER),
+            Column.of("Updated", Instant.class, WatchlistResponseModel.Row::getTradedAt));
 
-    private final ListTableModel<Quote> model = new ListTableModel<>(COLUMNS);
+    private final ListTableModel<WatchlistResponseModel.Row> model = new ListTableModel<>(COLUMNS);
     private final JLabel updated = new JLabel();
     private final JLabel live = new JLabel("NO DATA");
     private final JLabel dot = ViewComponents.statusDot(UiTheme.TEXT_MUTED);
@@ -49,7 +51,7 @@ public class WatchlistPanel extends TitledPanel {
     private final WatchlistController controller;
     private String charted;
 
-    public WatchlistPanel(ViewModel<List<Quote>> viewModel, WatchlistController controller,
+    public WatchlistPanel(ViewModel<WatchlistResponseModel> viewModel, WatchlistController controller,
                           ChartController chartController) {
         super("Watchlist");
         this.controller = controller;
@@ -71,9 +73,9 @@ public class WatchlistPanel extends TitledPanel {
         getContent().add(buildFooter(), BorderLayout.SOUTH);
 
         viewModel.onError(this::showProblem);
-        viewModel.onState(quotes -> {
-            model.setRows(quotes);
-            showFreshness(quotes);
+        viewModel.onState(watched -> {
+            model.setRows(watched.getRows());
+            showFreshness(watched.getRows());
         });
     }
 
@@ -82,14 +84,22 @@ public class WatchlistPanel extends TitledPanel {
      * close those are hours apart, and a green LIVE over a stale closing price is a lie the
      * user cannot see through.
      */
-    private void showFreshness(List<Quote> quotes) {
-        if (quotes == null || quotes.isEmpty()) {
+    private void showFreshness(List<WatchlistResponseModel.Row> rows) {
+        // The newest row, not the first one: rows hold their last price when a quote fails, so
+        // the top of the table can be hours older than the ticker below it.
+        Instant traded = null;
+        for (WatchlistResponseModel.Row row : rows) {
+            if (row.getTradedAt() != null && (traded == null || row.getTradedAt().isAfter(traded))) {
+                traded = row.getTradedAt();
+            }
+        }
+
+        if (traded == null) {
             paintStatus(UiTheme.TEXT_MUTED, "NO DATA");
             updated.setText("");
             return;
         }
 
-        Instant traded = quotes.get(0).getTimestamp();
         updated.setText("As of " + Format.time(traded));
         updated.setForeground(UiTheme.TEXT_LABEL);
         if (Duration.between(traded, Instant.now()).compareTo(STALE_AFTER) > 0) {
@@ -133,7 +143,7 @@ public class WatchlistPanel extends TitledPanel {
         });
 
         // Removing goes by the typed symbol when there is one, so a ticker that never got a
-        // row — because it could not be quoted — can still be taken off the list.
+        // row - because it could not be quoted - can still be taken off the list.
         JButton remove = smallButton("Remove");
         remove.setMnemonic(KeyEvent.VK_M);
         remove.setToolTipText("Stop watching the selected symbol (Alt+M)");

@@ -19,7 +19,7 @@ import com.marketmaker.entities.Candle;
 /**
  * Keeps downloaded price history on disk between runs.
  *
- * <p>Daily bars are settled history — yesterday's close will never change — so re-downloading
+ * <p>Daily bars are settled history - yesterday's close will never change - so re-downloading
  * them on every launch spends a 25-a-day budget on facts already known. A file counts as good
  * for the calendar day it was written: the first chart of the day pays for itself, the rest of
  * that day is free, and tomorrow's first fetch corrects today's still-moving close.

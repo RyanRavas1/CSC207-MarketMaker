@@ -1,6 +1,6 @@
 package com.marketmaker.use_case.remove_from_watchlist;
 
-import com.marketmaker.data_access.AccountDAO;
+import com.marketmaker.use_case.AccountDAO;
 import com.marketmaker.entities.Account;
 import com.marketmaker.use_case.receive_live_quotes.LiveQuoteDataAccessInterface;
 

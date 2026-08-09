@@ -3,10 +3,10 @@ package com.marketmaker.use_case.user_profile;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.marketmaker.data_access.AccountDAO;
+import com.marketmaker.use_case.AccountDAO;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Position;
-import com.marketmaker.price_feed.PriceFeed;
+import com.marketmaker.use_case.PriceFeed;
 
 /** Reports cash, live-valued holdings, and total equity for an account. */
 public class ViewProfileInteractor implements ViewProfileInputBoundary {

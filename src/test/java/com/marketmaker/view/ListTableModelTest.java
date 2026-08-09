@@ -83,7 +83,7 @@ class ListTableModelTest {
     void keepsNullCellValuesSoAbsentPricesRenderAsADash() throws Exception {
         ListTableModel<Row> model = new ListTableModel<>(COLUMNS);
 
-        // A market order has no limit price; the renderer turns this null into "—".
+        // A market order has no limit price; the renderer turns this null into "-".
         model.setRows(List.of(new Row("AAPL", null)));
         flushEventQueue();
 

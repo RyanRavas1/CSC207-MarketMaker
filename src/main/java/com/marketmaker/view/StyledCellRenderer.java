@@ -8,6 +8,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
+import com.marketmaker.interface_adapter.Format;
 
 /**
  * Draws cells in the dashboard's colours: signed values green/red, BUY/SELL

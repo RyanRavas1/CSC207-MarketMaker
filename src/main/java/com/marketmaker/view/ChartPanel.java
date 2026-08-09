@@ -19,6 +19,7 @@ import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.use_case.view_candlestick_chart.Resolution;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
+import com.marketmaker.interface_adapter.Format;
 
 /**
  * Price history for the selected ticker.
@@ -42,7 +43,7 @@ public class ChartPanel extends TitledPanel {
     private final JLabel low = statValue();
     private final JLabel close = statValue();
     private final JLabel volume = statValue();
-    private static final String SOURCE_TEXT = "Daily closes — Alpha Vantage";
+    private static final String SOURCE_TEXT = "Daily closes - Alpha Vantage";
 
     private final JLabel source = ViewComponents.label(SOURCE_TEXT,
             UiTheme.BASE_ITALIC, UiTheme.TEXT_LABEL, SwingConstants.LEFT);
