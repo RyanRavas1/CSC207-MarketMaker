@@ -1,5 +1,9 @@
 package com.marketmaker.data_access.exceptions;
 
+import com.marketmaker.data_access.AccountPersistenceException;
+import com.marketmaker.data_access.FinnhubApiException;
+import com.marketmaker.data_access.FinnhubApiRateLimitException;
+import com.marketmaker.data_access.StockDataException;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -1,4 +1,4 @@
-package com.marketmaker.data_access.exceptions;
+package com.marketmaker.data_access;
 
 /** Thrown when historical data cannot be fetched or parsed. */
 public class StockDataException extends RuntimeException {

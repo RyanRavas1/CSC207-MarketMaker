@@ -1,6 +1,6 @@
 package com.marketmaker.data_access.historical;
 
-import com.marketmaker.data_access.exceptions.StockDataException;
+import com.marketmaker.data_access.StockDataException;
 import com.marketmaker.entities.Candle;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

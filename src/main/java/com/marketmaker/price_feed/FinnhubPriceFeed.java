@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.json.JSONObject;
 
 import com.marketmaker.data_access.FinnhubApiClient;
-import com.marketmaker.data_access.exceptions.FinnhubApiException;
+import com.marketmaker.data_access.FinnhubApiException;
 import com.marketmaker.entities.Quote;
 import com.marketmaker.use_case.PriceFeed;
 import com.marketmaker.use_case.PriceFeedException;

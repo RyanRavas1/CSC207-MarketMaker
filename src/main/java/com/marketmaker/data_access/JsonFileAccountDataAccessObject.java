@@ -10,7 +10,6 @@ import java.time.LocalDate;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.marketmaker.data_access.exceptions.AccountPersistenceException;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Order;
 import com.marketmaker.entities.Position;

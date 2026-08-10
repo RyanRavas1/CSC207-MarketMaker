@@ -1,6 +1,5 @@
 package com.marketmaker.config;
 
-import com.marketmaker.config.exceptions.MissingEnvironmentVariableException;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Constructor;
