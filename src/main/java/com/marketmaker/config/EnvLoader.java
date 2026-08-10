@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.marketmaker.config.exceptions.MissingEnvironmentVariableException;
-
 /** Reads configuration from real environment variables, falling back to a local .env file. */
 public final class EnvLoader {
     // Both locations get used in practice: the repo root is the usual convention, and src/

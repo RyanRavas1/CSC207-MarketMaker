@@ -1,4 +1,4 @@
-package com.marketmaker.data_access.exceptions;
+package com.marketmaker.data_access;
 
 /**
  * Thrown when a call to the Finnhub API fails - either a non-2xx response
