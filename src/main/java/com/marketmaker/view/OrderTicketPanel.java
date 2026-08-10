@@ -24,7 +24,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 import com.marketmaker.entities.Order;
-import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistResponseModel;
 import com.marketmaker.interface_adapter.OrderTicketController;
 import com.marketmaker.interface_adapter.RealizedPnLController;
 import com.marketmaker.interface_adapter.ViewModel;

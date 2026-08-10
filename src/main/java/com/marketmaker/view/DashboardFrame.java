@@ -13,7 +13,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistResponseModel;
 import com.marketmaker.interface_adapter.CancelOrderController;
 import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.ProfileController;
