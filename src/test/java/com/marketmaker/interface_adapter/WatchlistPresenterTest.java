@@ -10,7 +10,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.marketmaker.entities.Quote;
-import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistResponseModel;
 
 /** The table holds a ticker's last price through a failed refresh, and drops it on removal. */
 class WatchlistPresenterTest {

@@ -2,7 +2,7 @@ package com.marketmaker.view;
 
 import com.marketmaker.entities.Candle;
 import com.marketmaker.entities.Order;
-import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistResponseModel;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.use_case.view_candlestick_chart.Resolution;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;

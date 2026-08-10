@@ -1,4 +1,4 @@
-package com.marketmaker.use_case.watchlist;
+package com.marketmaker.use_case.view_watchlist;
 
 import java.time.Instant;
 import java.util.List;

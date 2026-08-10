@@ -65,9 +65,9 @@ import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistRespons
 import com.marketmaker.use_case.search_ticker.TickerDataAccessInterface;
 import com.marketmaker.use_case.user_profile.ViewProfileInteractor;
 import com.marketmaker.use_case.user_profile.ViewProfileResponseModel;
-import com.marketmaker.use_case.watchlist.WatchlistInteractor;
-import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
-import com.marketmaker.use_case.watchlist.WatchlistRequestModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistInteractor;
+import com.marketmaker.use_case.view_watchlist.WatchlistResponseModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistRequestModel;
 import com.marketmaker.use_case.view_candlestick_chart.HistoricalDataAccessInterface;
 import com.marketmaker.use_case.view_candlestick_chart.Resolution;
 import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartInteractor;

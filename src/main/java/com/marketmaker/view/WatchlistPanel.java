@@ -21,7 +21,7 @@ import com.marketmaker.interface_adapter.WatchlistController;
 import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.interface_adapter.Format;
-import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistResponseModel;
 
 /**
  * The tickers being tracked, at their latest quoted price.
