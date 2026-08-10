@@ -2,9 +2,9 @@ package com.marketmaker.interface_adapter;
 
 import java.util.concurrent.Executor;
 
-import com.marketmaker.use_case.view_candlestick_chart.Resolution;
-import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartInputBoundary;
-import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartRequestModel;
+import com.marketmaker.use_case.view_trend_chart.Resolution;
+import com.marketmaker.use_case.view_trend_chart.ViewTrendChartInputBoundary;
+import com.marketmaker.use_case.view_trend_chart.ViewTrendChartRequestModel;
 
 /**
  * Loads the chart, and reloads it at a new interval when the user picks one.
@@ -16,13 +16,13 @@ import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartReque
  * a click that blocks the event dispatch thread freezes the whole window while it waits.
  */
 public class ChartController {
-    private final ViewCandlestickChartInputBoundary interactor;
+    private final ViewTrendChartInputBoundary interactor;
     private final Executor worker;
 
     private String ticker;
     private Resolution resolution;
 
-    public ChartController(ViewCandlestickChartInputBoundary interactor, Executor worker,
+    public ChartController(ViewTrendChartInputBoundary interactor, Executor worker,
                            String ticker, Resolution resolution) {
         this.interactor = interactor;
         this.worker = worker;
@@ -42,7 +42,7 @@ public class ChartController {
 
     public void reload() {
         worker.execute(() -> interactor.execute(
-                new ViewCandlestickChartRequestModel(ticker, resolution)));
+                new ViewTrendChartRequestModel(ticker, resolution)));
     }
 
     public Resolution getResolution() { return resolution; }

@@ -1,4 +1,4 @@
-package com.marketmaker.use_case.view_candlestick_chart;
+package com.marketmaker.use_case.view_trend_chart;
 
 /**
  * Thrown when price history could not be had, and the reason is worth telling the user.

@@ -1,15 +1,15 @@
-package com.marketmaker.use_case.view_candlestick_chart;
+package com.marketmaker.use_case.view_trend_chart;
 
 import java.util.List;
 
 import com.marketmaker.entities.Candle;
 
-public class ViewCandlestickChartResponseModel {
+public class ViewTrendChartResponseModel {
     private final String ticker;
     private final Resolution resolution;
     private final List<Candle> candles;
 
-    public ViewCandlestickChartResponseModel(String ticker, Resolution resolution, List<Candle> candles) {
+    public ViewTrendChartResponseModel(String ticker, Resolution resolution, List<Candle> candles) {
         this.ticker = ticker;
         this.resolution = resolution;
         this.candles = candles;

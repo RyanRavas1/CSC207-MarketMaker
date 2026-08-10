@@ -17,8 +17,8 @@ import javax.swing.SwingConstants;
 import com.marketmaker.entities.Candle;
 import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.ViewModel;
-import com.marketmaker.use_case.view_candlestick_chart.Resolution;
-import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
+import com.marketmaker.use_case.view_trend_chart.Resolution;
+import com.marketmaker.use_case.view_trend_chart.ViewTrendChartResponseModel;
 import com.marketmaker.interface_adapter.Format;
 
 /**
@@ -54,7 +54,7 @@ public class ChartPanel extends TitledPanel {
 
     private final ChartController controller;
 
-    public ChartPanel(ViewModel<ViewCandlestickChartResponseModel> viewModel, ChartController controller) {
+    public ChartPanel(ViewModel<ViewTrendChartResponseModel> viewModel, ChartController controller) {
         super("Chart");
         this.controller = controller;
 
@@ -89,7 +89,7 @@ public class ChartPanel extends TitledPanel {
         }
     }
 
-    private void show(ViewCandlestickChartResponseModel response) {
+    private void show(ViewTrendChartResponseModel response) {
         ticker.setText(response.getTicker());
         source.setText(SOURCE_TEXT);
         source.setFont(UiTheme.BASE_ITALIC);
