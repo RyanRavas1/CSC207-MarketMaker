@@ -1,0 +1,28 @@
+digraph deps {
+  graph [bgcolor="white", rankdir=TB, splines=spline, nodesep=0.6, ranksep=0.9, fontname="Helvetica"];
+  node  [shape=box, style="rounded,filled", fontname="Menlo", fontsize=15, height=0.55, margin="0.22,0.12", penwidth=0];
+  edge  [fontname="Helvetica", fontsize=11, color="#5C5C5C", penwidth=1.4, arrowsize=0.8];
+
+  view              [label="view",              fillcolor="#3F72D0", fontcolor=white];
+  data_access       [label="data_access",       fillcolor="#3F72D0", fontcolor=white];
+  price_feed        [label="price_feed",        fillcolor="#3F72D0", fontcolor=white];
+  interface_adapter [label="interface_adapter", fillcolor="#4E9E52", fontcolor=white];
+  use_case          [label="use_case",          fillcolor="#C2456E", fontcolor=white];
+  entities          [label="entities",          fillcolor="#DFA82C", fontcolor=white];
+
+  { rank=same; view; data_access; price_feed; }
+
+  interface_adapter -> use_case  [label=" 14"];
+  use_case          -> entities  [label=" 17"];
+  view              -> use_case  [label=" 5"];
+  view              -> interface_adapter [label=" 1"];
+  view              -> entities  [label=" 1"];
+  interface_adapter -> entities  [label=" 1"];
+  data_access       -> entities  [label=" 2"];
+  price_feed        -> entities  [label=" 1"];
+  price_feed        -> data_access [label=" 2", constraint=false];
+
+  // Outer layers implementing inner-layer interfaces: the dependency rule working.
+  data_access -> use_case [label=" 4", color="#137333", fontcolor="#137333", penwidth=2.4];
+  price_feed  -> use_case [label=" 1", color="#137333", fontcolor="#137333", penwidth=2.4];
+}

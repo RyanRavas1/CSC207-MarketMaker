@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="890" viewBox="0 100 1400 890" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1B2436"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#B26B00"/>
+    </marker>
+    <marker id="hollow" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#FFFFFF" stroke="#1B2436" stroke-width="1.4"/>
+    </marker>
+  </defs>
+
+  <rect width="1400" height="1010" fill="#FFFFFF"/>
+
+  <!-- ============ layer groups ============ -->
+  <rect x="50"   y="120" width="330"  height="600" rx="14" fill="#CDE9CE" stroke="#7CB97F" stroke-width="2"/>
+  <text x="75"  y="160" font-size="21" font-weight="700" fill="#2F6B33">Interface Adapters</text>
+
+  <rect x="395"  y="120" width="610"  height="600" rx="14" fill="#FBE0E9" stroke="#E39BB6" stroke-width="2"/>
+  <text x="420" y="160" font-size="21" font-weight="700" fill="#A32E56">Application Business Rules</text>
+
+  <rect x="1020" y="120" width="330"  height="290" rx="14" fill="#FDF3D7" stroke="#DCC069" stroke-width="2"/>
+  <text x="1045" y="160" font-size="21" font-weight="700" fill="#8A6A12">Enterprise Business Rules</text>
+
+  <rect x="50"   y="740" width="1300" height="150" rx="14" fill="#DCE9FA" stroke="#85A9DC" stroke-width="2"/>
+  <text x="75"  y="775" font-size="21" font-weight="700" fill="#2A4E96">Frameworks &amp; Drivers</text>
+
+  <!-- ============ interface adapters ============ -->
+  <rect x="75" y="245" width="280" height="46" rx="8" fill="#4E9E52"/>
+  <text x="215" y="274" font-size="14" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">OrderTicketController</text>
+
+  <rect x="75" y="420" width="280" height="46" rx="8" fill="#4E9E52"/>
+  <text x="215" y="449" font-size="14" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">PlaceOrderPresenter</text>
+
+  <rect x="75" y="600" width="280" height="46" rx="8" fill="#4E9E52"/>
+  <text x="215" y="629" font-size="14" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">ViewModel&lt;S&gt;</text>
+
+  <!-- ============ application business rules ============ -->
+  <rect x="420" y="195" width="270" height="46" rx="8" fill="#C2456E"/>
+  <text x="555" y="224" font-size="13" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">PlaceOrderRequestModel</text>
+
+  <rect x="420" y="290" width="270" height="46" rx="8" fill="#C2456E"/>
+  <text x="555" y="319" font-size="13" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">PlaceOrderInputBoundary</text>
+
+  <rect x="420" y="440" width="270" height="46" rx="8" fill="#C2456E"/>
+  <text x="555" y="469" font-size="13" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">PlaceOrderOutputBoundary</text>
+
+  <rect x="420" y="560" width="270" height="46" rx="8" fill="#C2456E"/>
+  <text x="555" y="589" font-size="13" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">PlaceOrderResponseModel</text>
+
+  <rect x="755" y="360" width="235" height="52" rx="8" fill="#C2456E"/>
+  <text x="872" y="392" font-size="14" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">PlaceOrderInteractor</text>
+
+  <!-- ============ entities ============ -->
+  <rect x="1050" y="210" width="130" height="42" rx="8" fill="#DFA82C"/>
+  <text x="1115" y="237" font-size="14" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">Account</text>
+
+  <rect x="1195" y="210" width="130" height="42" rx="8" fill="#DFA82C"/>
+  <text x="1260" y="237" font-size="14" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">Order</text>
+
+  <rect x="1050" y="272" width="130" height="42" rx="8" fill="#DFA82C"/>
+  <text x="1115" y="299" font-size="14" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">Position</text>
+
+  <rect x="1195" y="272" width="130" height="42" rx="8" fill="#DFA82C"/>
+  <text x="1260" y="299" font-size="14" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">Trade</text>
+
+  <!-- ============ frameworks and drivers ============ -->
+  <rect x="80" y="800" width="250" height="48" rx="8" fill="#3F72D0"/>
+  <text x="205" y="830" font-size="14" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">OrderTicketPanel</text>
+
+  <!-- AccountDAO now sits in the use-case layer, where the interactors that own it live. -->
+  <rect x="755" y="555" width="235" height="46" rx="8" fill="#C2456E"/>
+  <text x="872" y="584" font-size="14" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">AccountDAO</text>
+
+  <rect x="830" y="800" width="330" height="48" rx="8" fill="#3F72D0"/>
+  <text x="995" y="830" font-size="13" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">JsonFileAccountDataAccessObject</text>
+
+  <rect x="1190" y="800" width="140" height="48" rx="8" fill="#3F72D0"/>
+  <text x="1260" y="830" font-size="14" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">demo.json</text>
+
+  <!-- ============ arrows ============ -->
+  <g fill="none" stroke="#1B2436" stroke-width="2.2">
+    <!-- panel -> controller, routed down the left gutter -->
+    <path d="M 80 824 L 62 824 L 62 268 L 73 268" marker-end="url(#arrow)"/>
+    <!-- controller -> request model -->
+    <path d="M 355 262 L 390 262 L 390 218 L 418 218" marker-end="url(#arrow)"/>
+    <!-- controller -> input boundary -->
+    <path d="M 355 278 L 402 278 L 402 313 L 418 313" marker-end="url(#arrow)"/>
+    <!-- presenter -> view model -->
+    <path d="M 215 466 L 215 598" marker-end="url(#arrow)"/>
+    <!-- panel -> view model -->
+    <path d="M 300 800 L 300 648" marker-end="url(#arrow)"/>
+    <!-- interactor -> output boundary -->
+    <path d="M 755 397 L 740 397 L 740 463 L 692 463" marker-end="url(#arrow)"/>
+    <!-- interactor -> response model -->
+    <path d="M 755 406 L 712 406 L 712 583 L 692 583" marker-end="url(#arrow)"/>
+    <!-- interactor -> entities -->
+    <path d="M 990 386 L 1015 386 L 1015 293 L 1048 293" marker-end="url(#arrow)"/>
+    <!-- interactor -> the DAO interface it owns -->
+    <path d="M 872 412 L 872 553" marker-end="url(#arrow)"/>
+    <!-- dao -> database -->
+    <path d="M 1160 824 L 1188 824" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- implements: hollow triangle -->
+  <g fill="none" stroke="#1B2436" stroke-width="2.2">
+    <path d="M 755 375 L 725 375 L 725 313 L 694 313" marker-end="url(#hollow)"/>
+    <path d="M 355 443 L 395 443 L 395 463 L 416 463" marker-end="url(#hollow)"/>
+    <path d="M 900 798 L 900 605" marker-end="url(#hollow)"/>
+  </g>
+
+
+  <!-- ============ legend ============ -->
+  <g>
+    <line x1="80" y1="940" x2="160" y2="940" stroke="#1B2436" stroke-width="2.2" marker-end="url(#arrow)"/>
+    <text x="80" y="968" font-size="14" fill="#5C5C5C">Dependency</text>
+
+    <line x1="260" y1="940" x2="340" y2="940" stroke="#1B2436" stroke-width="2.2" marker-end="url(#hollow)"/>
+    <text x="260" y="968" font-size="14" fill="#5C5C5C">Implements</text>
+
+
+    <rect x="450" y="924" width="120" height="32" rx="7" fill="#4E9E52"/>
+    <text x="510" y="945" font-size="13" font-family="Menlo, Courier New, monospace" fill="#FFFFFF" text-anchor="middle">Component</text>
+  </g>
+
+</svg>
