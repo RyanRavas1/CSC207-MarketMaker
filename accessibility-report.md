@@ -203,8 +203,9 @@ limitation while changing nothing about the person, which is the social model's 
 
 Concretely, the groups least likely to use MarketMaker comfortably today are:
 
-- **Blind and low-vision users.** Two tooltips and no accessible names in the entire
-  program, no inheritance of system fonts or high-contrast themes, no zoom.
+- **Blind and low-vision users.** Before this audit the entire program held two tooltips
+  and no accessible names. The tables and the order ticket are named now, but there is
+  still no inheritance of system fonts or high-contrast themes, and no zoom.
 - **Colourblind users.** Red-green colour blindness affects roughly one in twelve men, and
   our tables lean on exactly that pair for the side column and row tints.
 - **Users who cannot use a mouse**, until this audit. Every button sat outside the Tab
@@ -246,10 +247,11 @@ composition root.
 
 We can put a number on that claim. Every accessibility change described in this report,
 `setLabelFor` on the ticket, accessible names on five tables, seven mnemonics and the
-`setFocusable` fix, touched seven files, all of them in `com.marketmaker.view`. We
-modified no entity, interactor, presenter or data access class, and all 73 tests passed
-unchanged afterwards. Naming the positions table never went near the code that computes
-profit and loss, because the Dependency Rule already keeps that logic ignorant of Swing.
+`setFocusable` fix, touched nine files, all of them in `com.marketmaker.view`. We
+modified no entity, interactor, presenter or data access class, and the whole test suite
+passed unchanged afterwards. Naming the positions table never went near the code that
+computes profit and loss, because the Dependency Rule already keeps that logic ignorant of
+Swing.
 The architecture we chose for other reasons is what made this cheap.
 
 It is also worth separating the two kinds of intervention in our own feature list. The
