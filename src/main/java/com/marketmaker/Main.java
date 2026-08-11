@@ -26,7 +26,7 @@ import com.marketmaker.data_access.CandleFileCache;
 import com.marketmaker.entities.Account;
 import com.marketmaker.entities.Quote;
 import com.marketmaker.interface_adapter.CancelOrderController;
-import com.marketmaker.interface_adapter.CandlestickChartPresenter;
+import com.marketmaker.interface_adapter.TrendChartPresenter;
 import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.OrderFeedbackPresenter;
 import com.marketmaker.interface_adapter.OrderHistoryPresenter;
@@ -65,13 +65,13 @@ import com.marketmaker.use_case.remove_from_watchlist.RemoveFromWatchlistRespons
 import com.marketmaker.use_case.search_ticker.TickerDataAccessInterface;
 import com.marketmaker.use_case.user_profile.ViewProfileInteractor;
 import com.marketmaker.use_case.user_profile.ViewProfileResponseModel;
-import com.marketmaker.use_case.watchlist.WatchlistInteractor;
-import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
-import com.marketmaker.use_case.watchlist.WatchlistRequestModel;
-import com.marketmaker.use_case.view_candlestick_chart.HistoricalDataAccessInterface;
-import com.marketmaker.use_case.view_candlestick_chart.Resolution;
-import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartInteractor;
-import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistInteractor;
+import com.marketmaker.use_case.view_watchlist.WatchlistResponseModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistRequestModel;
+import com.marketmaker.use_case.view_trend_chart.HistoricalDataAccessInterface;
+import com.marketmaker.use_case.view_trend_chart.Resolution;
+import com.marketmaker.use_case.view_trend_chart.ViewTrendChartInteractor;
+import com.marketmaker.use_case.view_trend_chart.ViewTrendChartResponseModel;
 import com.marketmaker.use_case.view_order_history.ViewOrderHistoryInteractor;
 import com.marketmaker.use_case.view_order_history.ViewOrderHistoryRequestModel;
 import com.marketmaker.use_case.view_order_history.ViewOrderHistoryResponseModel;
@@ -128,7 +128,7 @@ public final class Main {
             ViewModel<ViewPortfolioSummaryResponseModel> summary = new ViewModel<>();
             ViewModel<ViewPositionsResponseModel> positions = new ViewModel<>();
             ViewModel<ViewOrderHistoryResponseModel> orderHistory = new ViewModel<>();
-            ViewModel<ViewCandlestickChartResponseModel> chart = new ViewModel<>();
+            ViewModel<ViewTrendChartResponseModel> chart = new ViewModel<>();
             ViewModel<WatchlistResponseModel> watchlist = new ViewModel<>();
             ViewModel<String> status = new ViewModel<>();
             ViewModel<ViewProfileResponseModel> profile = new ViewModel<>();
@@ -139,8 +139,8 @@ public final class Main {
                     accountDAO, quotes, new PositionsPresenter(positions));
             ViewOrderHistoryInteractor historyInteractor = new ViewOrderHistoryInteractor(
                     accountDAO, new OrderHistoryPresenter(orderHistory));
-            ViewCandlestickChartInteractor chartInteractor = new ViewCandlestickChartInteractor(
-                    createHistoricalData(), new CandlestickChartPresenter(chart));
+            ViewTrendChartInteractor chartInteractor = new ViewTrendChartInteractor(
+                    createHistoricalData(), new TrendChartPresenter(chart));
             ChartController chartController = new ChartController(
                     chartInteractor, WORKER, CHART_TICKER, Resolution.ONE_MONTH);
 

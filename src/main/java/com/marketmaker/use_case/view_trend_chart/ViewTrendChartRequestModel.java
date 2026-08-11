@@ -1,10 +1,10 @@
-package com.marketmaker.use_case.view_candlestick_chart;
+package com.marketmaker.use_case.view_trend_chart;
 
-public class ViewCandlestickChartRequestModel {
+public class ViewTrendChartRequestModel {
     private final String ticker;
     private final Resolution resolution;
 
-    public ViewCandlestickChartRequestModel(String ticker, Resolution resolution) {
+    public ViewTrendChartRequestModel(String ticker, Resolution resolution) {
         this.ticker = ticker;
         this.resolution = resolution;
     }

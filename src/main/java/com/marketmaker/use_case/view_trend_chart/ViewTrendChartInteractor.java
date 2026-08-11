@@ -1,4 +1,4 @@
-package com.marketmaker.use_case.view_candlestick_chart;
+package com.marketmaker.use_case.view_trend_chart;
 
 import java.util.List;
 
@@ -8,18 +8,18 @@ import com.marketmaker.entities.Candle;
  * Displays historical price candles for a selected ticker. Also backs Switch Chart Interval:
  * the caller re-invokes execute() with a different resolution to reload the same chart.
  */
-public class ViewCandlestickChartInteractor implements ViewCandlestickChartInputBoundary {
+public class ViewTrendChartInteractor implements ViewTrendChartInputBoundary {
     private final HistoricalDataAccessInterface dataAccess;
-    private final ViewCandlestickChartOutputBoundary presenter;
+    private final ViewTrendChartOutputBoundary presenter;
 
-    public ViewCandlestickChartInteractor(HistoricalDataAccessInterface dataAccess,
-                                           ViewCandlestickChartOutputBoundary presenter) {
+    public ViewTrendChartInteractor(HistoricalDataAccessInterface dataAccess,
+                                    ViewTrendChartOutputBoundary presenter) {
         this.dataAccess = dataAccess;
         this.presenter = presenter;
     }
 
     @Override
-    public void execute(ViewCandlestickChartRequestModel request) {
+    public void execute(ViewTrendChartRequestModel request) {
         String ticker = request.getTicker();
         if (ticker == null || ticker.isBlank()) {
             presenter.presentFailure("Select a ticker to chart.");
@@ -42,7 +42,7 @@ public class ViewCandlestickChartInteractor implements ViewCandlestickChartInput
             return;
         }
 
-        presenter.presentSuccess(new ViewCandlestickChartResponseModel(
+        presenter.presentSuccess(new ViewTrendChartResponseModel(
                 ticker.toUpperCase(), request.getResolution(), candles));
     }
 }

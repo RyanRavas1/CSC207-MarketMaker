@@ -13,7 +13,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistResponseModel;
 import com.marketmaker.interface_adapter.CancelOrderController;
 import com.marketmaker.interface_adapter.ChartController;
 import com.marketmaker.interface_adapter.ProfileController;
@@ -22,7 +22,7 @@ import com.marketmaker.interface_adapter.OrderTicketController;
 import com.marketmaker.interface_adapter.ViewModel;
 import com.marketmaker.interface_adapter.WatchlistController;
 import com.marketmaker.use_case.user_profile.ViewProfileResponseModel;
-import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
+import com.marketmaker.use_case.view_trend_chart.ViewTrendChartResponseModel;
 import com.marketmaker.use_case.view_order_history.ViewOrderHistoryResponseModel;
 import com.marketmaker.use_case.view_portfolio_summary.ViewPortfolioSummaryResponseModel;
 import com.marketmaker.use_case.view_positions.ViewPositionsResponseModel;
@@ -39,7 +39,7 @@ public class DashboardFrame extends JFrame {
     private final ViewModel<ViewPortfolioSummaryResponseModel> summary;
     private final ViewModel<ViewPositionsResponseModel> positions;
     private final ViewModel<ViewOrderHistoryResponseModel> orderHistory;
-    private final ViewModel<ViewCandlestickChartResponseModel> chart;
+    private final ViewModel<ViewTrendChartResponseModel> chart;
     private final ViewModel<WatchlistResponseModel> watchlist;
     private final OrderTicketPanel ticket;
     private final OrderHistoryPanel history;
@@ -66,7 +66,7 @@ public class DashboardFrame extends JFrame {
                           ViewModel<ViewPortfolioSummaryResponseModel> summary,
                           ViewModel<ViewPositionsResponseModel> positions,
                           ViewModel<ViewOrderHistoryResponseModel> orderHistory,
-                          ViewModel<ViewCandlestickChartResponseModel> chart,
+                          ViewModel<ViewTrendChartResponseModel> chart,
                           ViewModel<WatchlistResponseModel> watchlist) {
         super("MarketMaker - Paper Trading Simulator");
         this.summary = summary;

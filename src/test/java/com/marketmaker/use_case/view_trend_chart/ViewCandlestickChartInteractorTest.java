@@ -1,4 +1,4 @@
-package com.marketmaker.use_case.view_candlestick_chart;
+package com.marketmaker.use_case.view_trend_chart;
 
 import com.marketmaker.entities.Candle;
 import org.junit.jupiter.api.Test;
@@ -12,12 +12,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ViewCandlestickChartInteractorTest {
 
-    private static final class FakePresenter implements ViewCandlestickChartOutputBoundary {
-        ViewCandlestickChartResponseModel successResponse;
+    private static final class FakePresenter implements ViewTrendChartOutputBoundary {
+        ViewTrendChartResponseModel successResponse;
         String failureMessage;
 
         @Override
-        public void presentSuccess(ViewCandlestickChartResponseModel response) {
+        public void presentSuccess(ViewTrendChartResponseModel response) {
             this.successResponse = response;
         }
 
@@ -45,9 +45,9 @@ public class ViewCandlestickChartInteractorTest {
     void returnsCandlesForKnownTicker() {
         FakeHistoricalDataAccess dataAccess = new FakeHistoricalDataAccess();
         FakePresenter presenter = new FakePresenter();
-        ViewCandlestickChartInteractor interactor = new ViewCandlestickChartInteractor(dataAccess, presenter);
+        ViewTrendChartInteractor interactor = new ViewTrendChartInteractor(dataAccess, presenter);
 
-        interactor.execute(new ViewCandlestickChartRequestModel("aapl", Resolution.ONE_MONTH));
+        interactor.execute(new ViewTrendChartRequestModel("aapl", Resolution.ONE_MONTH));
 
         assertNull(presenter.failureMessage);
         assertEquals(1, presenter.successResponse.getCandles().size());
@@ -57,23 +57,23 @@ public class ViewCandlestickChartInteractorTest {
     @Test
     void switchingIntervalReReloadsWithNewResolution() {
         FakeHistoricalDataAccess dataAccess = new FakeHistoricalDataAccess();
-        ViewCandlestickChartInteractor interactor =
-                new ViewCandlestickChartInteractor(dataAccess, new FakePresenter());
+        ViewTrendChartInteractor interactor =
+                new ViewTrendChartInteractor(dataAccess, new FakePresenter());
 
-        interactor.execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.ONE_WEEK));
+        interactor.execute(new ViewTrendChartRequestModel("AAPL", Resolution.ONE_WEEK));
         assertEquals(Resolution.ONE_WEEK, dataAccess.requestedResolution);
 
-        interactor.execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.ONE_MONTH));
+        interactor.execute(new ViewTrendChartRequestModel("AAPL", Resolution.ONE_MONTH));
         assertEquals(Resolution.ONE_MONTH, dataAccess.requestedResolution);
     }
 
     @Test
     void reportsFailureWhenNoDataAvailable() {
         FakePresenter presenter = new FakePresenter();
-        ViewCandlestickChartInteractor interactor =
-                new ViewCandlestickChartInteractor(new FakeHistoricalDataAccess(), presenter);
+        ViewTrendChartInteractor interactor =
+                new ViewTrendChartInteractor(new FakeHistoricalDataAccess(), presenter);
 
-        interactor.execute(new ViewCandlestickChartRequestModel("ZZZZ", Resolution.ONE_MONTH));
+        interactor.execute(new ViewTrendChartRequestModel("ZZZZ", Resolution.ONE_MONTH));
 
         // Names the symbol and what to do about it, rather than just reporting emptiness.
         assertTrue(presenter.failureMessage.contains("ZZZZ"));
@@ -87,8 +87,8 @@ public class ViewCandlestickChartInteractorTest {
         };
         FakePresenter presenter = new FakePresenter();
 
-        new ViewCandlestickChartInteractor(refusing, presenter)
-                .execute(new ViewCandlestickChartRequestModel("AAPL", Resolution.ONE_MONTH));
+        new ViewTrendChartInteractor(refusing, presenter)
+                .execute(new ViewTrendChartRequestModel("AAPL", Resolution.ONE_MONTH));
 
         // A spent quota is not the ticker's fault, so the message must not blame the symbol.
         assertEquals("Daily price-history limit reached.", presenter.failureMessage);

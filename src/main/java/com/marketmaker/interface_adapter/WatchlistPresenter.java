@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import com.marketmaker.entities.Quote;
-import com.marketmaker.use_case.watchlist.WatchlistOutputBoundary;
-import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistOutputBoundary;
+import com.marketmaker.use_case.view_watchlist.WatchlistResponseModel;
 
 /**
  * Publishes the watched tickers, and hands the prices among them to whoever else needs them.

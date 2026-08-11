@@ -1,8 +1,8 @@
 package com.marketmaker.interface_adapter;
 
 import com.marketmaker.entities.Candle;
-import com.marketmaker.use_case.view_candlestick_chart.Resolution;
-import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
+import com.marketmaker.use_case.view_trend_chart.Resolution;
+import com.marketmaker.use_case.view_trend_chart.ViewTrendChartResponseModel;
 import com.marketmaker.use_case.view_order_history.ViewOrderHistoryResponseModel;
 import com.marketmaker.use_case.view_portfolio_summary.ViewPortfolioSummaryResponseModel;
 import com.marketmaker.use_case.view_positions.ViewPositionsResponseModel;
@@ -31,7 +31,7 @@ class PresentersAndViewModelTest {
         ViewModel<ViewOrderHistoryResponseModel> history = new ViewModel<>(); ViewOrderHistoryResponseModel historyResponse = new ViewOrderHistoryResponseModel(List.of(), List.of());
         new OrderHistoryPresenter(history).presentSuccess(historyResponse); assertSame(historyResponse, history.getState()); new OrderHistoryPresenter(history).presentFailure("history error"); assertEquals("history error", history.getError());
 
-        ViewModel<ViewCandlestickChartResponseModel> chart = new ViewModel<>(); ViewCandlestickChartResponseModel chartResponse = new ViewCandlestickChartResponseModel("AAPL", Resolution.ONE_MONTH, List.<Candle>of());
-        new CandlestickChartPresenter(chart).presentSuccess(chartResponse); assertSame(chartResponse, chart.getState()); new CandlestickChartPresenter(chart).presentFailure("chart error"); assertEquals("chart error", chart.getError());
+        ViewModel<ViewTrendChartResponseModel> chart = new ViewModel<>(); ViewTrendChartResponseModel chartResponse = new ViewTrendChartResponseModel("AAPL", Resolution.ONE_MONTH, List.<Candle>of());
+        new TrendChartPresenter(chart).presentSuccess(chartResponse); assertSame(chartResponse, chart.getState()); new TrendChartPresenter(chart).presentFailure("chart error"); assertEquals("chart error", chart.getError());
     }
 }

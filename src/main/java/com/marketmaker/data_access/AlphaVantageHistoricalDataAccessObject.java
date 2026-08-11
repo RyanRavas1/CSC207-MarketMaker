@@ -17,9 +17,9 @@ import java.util.logging.Logger;
 import org.json.JSONObject;
 
 import com.marketmaker.entities.Candle;
-import com.marketmaker.use_case.view_candlestick_chart.HistoricalDataAccessInterface;
-import com.marketmaker.use_case.view_candlestick_chart.HistoricalDataUnavailableException;
-import com.marketmaker.use_case.view_candlestick_chart.Resolution;
+import com.marketmaker.use_case.view_trend_chart.HistoricalDataAccessInterface;
+import com.marketmaker.use_case.view_trend_chart.HistoricalDataUnavailableException;
+import com.marketmaker.use_case.view_trend_chart.Resolution;
 
 /**
  * Daily closing prices from Alpha Vantage.

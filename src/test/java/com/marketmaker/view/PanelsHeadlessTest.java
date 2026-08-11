@@ -2,10 +2,10 @@ package com.marketmaker.view;
 
 import com.marketmaker.entities.Candle;
 import com.marketmaker.entities.Order;
-import com.marketmaker.use_case.watchlist.WatchlistResponseModel;
+import com.marketmaker.use_case.view_watchlist.WatchlistResponseModel;
 import com.marketmaker.interface_adapter.ViewModel;
-import com.marketmaker.use_case.view_candlestick_chart.Resolution;
-import com.marketmaker.use_case.view_candlestick_chart.ViewCandlestickChartResponseModel;
+import com.marketmaker.use_case.view_trend_chart.Resolution;
+import com.marketmaker.use_case.view_trend_chart.ViewTrendChartResponseModel;
 import com.marketmaker.use_case.view_order_history.OrderHistoryRow;
 import com.marketmaker.use_case.view_order_history.TradeHistoryRow;
 import com.marketmaker.use_case.view_order_history.ViewOrderHistoryResponseModel;
@@ -65,9 +65,9 @@ class PanelsHeadlessTest {
             watchlist.setState(new WatchlistResponseModel(
                     List.of(new WatchlistResponseModel.Row("AAPL", 12.0, Instant.EPOCH)), List.of()));
 
-            ViewModel<ViewCandlestickChartResponseModel> chart = new ViewModel<>();
+            ViewModel<ViewTrendChartResponseModel> chart = new ViewModel<>();
             chartRef.set(new ChartPanel(chart, null));
-            chart.setState(new ViewCandlestickChartResponseModel("AAPL", Resolution.ONE_MONTH,
+            chart.setState(new ViewTrendChartResponseModel("AAPL", Resolution.ONE_MONTH,
                     List.of(new Candle("AAPL", "D", 1, 2, 0, 1, 1, LocalDateTime.MIN))));
         });
         onEdt(() -> {
