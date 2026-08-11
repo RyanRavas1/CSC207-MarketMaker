@@ -1,7 +1,5 @@
 package com.marketmaker.data_access;
 
-import com.marketmaker.data_access.exceptions.FinnhubApiException;
-import com.marketmaker.data_access.exceptions.FinnhubApiRateLimitException;
 import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.SSLContext;

@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 import com.marketmaker.data_access.FinnhubApiClient;
-import com.marketmaker.data_access.exceptions.FinnhubApiException;
+import com.marketmaker.data_access.FinnhubApiException;
 import com.marketmaker.use_case.PriceFeedException;
 
 /** Parsing a /quote body, the call-saving cache, and what happens when the feed misbehaves. */

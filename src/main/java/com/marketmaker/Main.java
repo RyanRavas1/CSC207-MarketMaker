@@ -15,7 +15,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 
 import com.marketmaker.config.EnvLoader;
-import com.marketmaker.config.exceptions.MissingEnvironmentVariableException;
+import com.marketmaker.config.MissingEnvironmentVariableException;
 import com.marketmaker.use_case.AccountDAO;
 import com.marketmaker.data_access.FinnhubApiClient;
 import com.marketmaker.data_access.JsonFileAccountDataAccessObject;

@@ -11,9 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 
-import com.marketmaker.data_access.exceptions.FinnhubApiException;
-import com.marketmaker.data_access.exceptions.FinnhubApiRateLimitException;
-
 /**
  * Handles all raw HTTP communication with the Finnhub API.
  * Only returns string of the JSON response.
